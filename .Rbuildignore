@@ -1,0 +1,16 @@
+^renv$
+^renv\.lock$
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.idea$
+^data-raw$
+^dev$
+$run_dev.*
+^app.R$
+^.*\.tar\.gz$
+^autoCluster\.Rproj$
+^README\.Rmd$
+^app\.R$
+^rsconnect$
+^clusters\.tsv$
+^discr_var\.tsv$

@@ -41,7 +41,7 @@ app_ui <- function(request) {
                 ),
                 tags$br(),
                 tags$br(),
-                tags$a(href = "https://github.com/ecamenen/autoCluster/blob/master/README.md", "Go to the tutorial"),
+                tags$a(href = "https://github.com/ecamenen/autoCluster/blob/master/README.md", "Read the tutorial"),
                 tags$br(),
                 tags$br()
             ),

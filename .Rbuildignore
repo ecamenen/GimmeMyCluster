@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
@@ -10,3 +12,5 @@ $run_dev.*
 ^README\.Rmd$
 ^app\.R$
 ^rsconnect$
+^clusters\.tsv$
+^discr_var\.tsv$

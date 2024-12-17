@@ -78,7 +78,7 @@ app_server <- function(input, output, session) {
         # !file.exists(
         if (!is.null(f)) {
             if (grepl("xlsx?", f)) {
-                data <- openxlsx::read.xlsx(f, rowNames = TRUE)
+                data <- read.xlsx(f, rowNames = TRUE)
             } else {
                 data <- read.table(
                     f,

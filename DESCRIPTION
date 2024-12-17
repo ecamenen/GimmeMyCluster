@@ -29,6 +29,7 @@ Imports:
     magrittr,
     openxlsx,
     optparse,
+    pkgload,
     scales,
     shiny,
     shinyjs,

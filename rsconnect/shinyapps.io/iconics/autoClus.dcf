@@ -1,0 +1,10 @@
+name: autoClus
+title: Performs unsupervised clustering and automatically determine the best number of cluster
+username: iconics
+account: iconics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13606016
+bundleId: 9534438
+url: https://ecamenen.shinyapps.io/autoClus/
+version: 1

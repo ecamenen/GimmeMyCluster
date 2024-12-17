@@ -1,8 +1,26 @@
 # [Autoclus] - Automatic clustering
 
-Version: 3.1
+Version: 4.0.1
 
 Performs unsupervised clustering and automatically determine the best number of cluster
+
+<!-- TOC -->
+* [Description](#description)
+    * [Input files](#input-files)
+    * [Output files](#output-files)
+        * [Default mode](#default-mode)
+        * [Agglomerative hierachical clustering mode (by default)](#agglomerative-hierachical-clustering-mode--by-default-)
+        * [Advanced mode](#advanced-mode)
+* [Installation](#installation)
+    * [Windows & Mac](#windows--mac)
+    * [Linux](#linux)
+* [Launch the app](#launch-the-app)
+* [Command line interface](#command-line-interface)
+  * [Execution parameters](#execution-parameters)
+  * [Files parameters](#files-parameters)
+  * [Clustering parameters](#clustering-parameters)
+* [References](#references)
+<!-- TOC -->
 
 ## Description
 Unsupervised algorithm to classify each individuals (e.g., individuals) in a optimal number of clusters. This optimum is determined automatically by the Silhouette's index (Rousseeuw, 1987). This index is based on: a) the average distance of a point to each points of its cluster, b) the average distance with each points of the closest cluster. For a given partitioning, the average width of the silhouette index is calculated on each s(i) = ( b(i) - a(i) ) / max{ a(i), b(i) }. This index vary from 1 (where the individuals are well fitted in their class) to -1 (where they are closer to another cluster). The best partition is determined by the minimum average silhouette width.

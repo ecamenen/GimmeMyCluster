@@ -6,8 +6,7 @@
 \alias{autoCluster-package}
 \title{autoCluster: Automatic Clustering}
 \description{
-Performs unsupervised clustering and automatically
-    determine the best number of cluster.
+Performs unsupervised clustering and automatically determine the best number of cluster.
 }
 \author{
 \strong{Maintainer}: Etienne Camenen \email{etienne.camenen@gmail.com}

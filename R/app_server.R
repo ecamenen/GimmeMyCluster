@@ -263,7 +263,7 @@ app_server <- function(input, output, session) {
             })
             vars$plotGap <- expr({
                   if (nrow(vars$data) < (NB_ROW_MAX / 2)) {
-                      plotGapPerPart(vars$gap, vars$max_clusters, v = FALSE)
+                      plotGapPerPart(vars$gap, vars$max_clusters, verbose = FALSE)
                       # plotGapPerPart2(gap, vars$max_clusters)
                   } else {
                       message("\n[WARNING] Dataset too big to calculate a gap statistics.")
@@ -312,9 +312,9 @@ app_server <- function(input, output, session) {
                 input$max_biomark
             )
         )
-        vars$ctr_clus_plot <- expr(plotDiscriminantVariables(discr))
+        vars$ctr_clus_plot <- expr(plotDiscriminantVariables(eval(vars$disc)))
         vars$ctr_clus <- expr(100 * getCtrVar(vars$classif_type, vars$optimal_k, vars$cl_k, vars$data))
-        writeTsv(discr, "discr_var.tsv", v = FALSE)
+        writeTsv(eval(vars$disc), "discr_var.tsv", v = FALSE)
     }
 
     # post-process for data

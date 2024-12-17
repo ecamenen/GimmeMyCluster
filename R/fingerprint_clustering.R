@@ -5,7 +5,7 @@
 
 # Pseudo-random settings:
 # milisec * PID
-set.seed(as.numeric(format(Sys.time(), "%OS2")) * 100 * Sys.getpid())
+# set.seed(as.numeric(format(Sys.time(), "%OS2")) * 100 * Sys.getpid())
 
 # Global variables settings
 TEXT <- TRUE # print values on graph (for optimum partition and heatmap)

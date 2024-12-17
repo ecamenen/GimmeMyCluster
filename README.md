@@ -1,29 +1,27 @@
-![LOGO](images/Logo_Metexplore.png)
-# FingerprintClustering
+# [Autoclus] - Automatic clustering
 
 Version: 3.1
 
-## Short description
 Performs unsupervised clustering and automatically determine the best number of cluster
 
 ## Description
-Unsupervised algorithm to classify each individuals (e.g., metabolites) in a optimal number of clusters (i.e., sub-network with common chemical mecanisms). This optimum is determined automatically by the Silhouette's index (Rousseeuw, 1987). This index is based on: a) the average distance of a point to each points of its cluster, b) the average distance with each points of the closest cluster. For a given partitioning, the average width of the silhouette index is calculated on each s(i) = ( b(i) - a(i) ) / max{ a(i), b(i) }. This index vary from 1 (where the individuals are well fitted in their class) to -1 (where they are closer to another cluster). The best partition is determined by the minimum average silhouette width. This tool is part of the MetExplore's project consisting in a web server dedicated to the analysis of omics data in the context of genome scale metabolic networks (Cottret et al., 2018).
+Unsupervised algorithm to classify each individuals (e.g., individuals) in a optimal number of clusters. This optimum is determined automatically by the Silhouette's index (Rousseeuw, 1987). This index is based on: a) the average distance of a point to each points of its cluster, b) the average distance with each points of the closest cluster. For a given partitioning, the average width of the silhouette index is calculated on each s(i) = ( b(i) - a(i) ) / max{ a(i), b(i) }. This index vary from 1 (where the individuals are well fitted in their class) to -1 (where they are closer to another cluster). The best partition is determined by the minimum average silhouette width.
 
 ### Input files
-- a ```fingerprint``` (csv or tsv) : the first column should contains the individuals' names (e.g., identifier values to map on a network file), and the other, the variables (e.g., the individuals name in case of a a pseudo-distance matrix between metabolites among a network). Except for the first one, columns with characters values will be discarded from the analysis. "NA" values are not tolerated by the algorithms.
+- a ```matrix``` (csv or tsv) : the first column should contains the individuals' names, and the other, the variables. Except for the first one, columns with characters values will be discarded from the analysis. "NA" values are not tolerated by the algorithms.  An example dataset can be downloaded [here](inst/extdata/matrix.txt).
 
 ### Output files
 
 ##### Default mode 
 
 - ```heatmap.pdf``` : distance matrix between individuals colored by a gradient of color (from minimal distance, in red, to maximum distance, in blank). In case of hierarchical clustering, the individuals are ranked according to dendrogram result. In case of clustering by partitioning (or in advanced mode), they are ordered by the Silhouette's score.
-![heatmap](/images/heatmap.png)
+![heatmap](inst/extdata/img/heatmap.png)
 - ```average_silhouette.pdf``` : optimal number of clusters according to the average Silhouette's index (x: number of clusters; y: average width of silhouette).
-![average_silhouette](/images/average_silhouette.png)
+![average_silhouette](inst/extdata/img/average_silhouette.png)
 - ```silhouette.pdf``` : for the optimal number of clusters (determined above), the Silhouette's index for each individuals and for each cluster.
-![silhouette](/images/silhouette.png)
+![silhouette](inst/extdata/img/silhouette.png)
 - ```pca.pdf``` : individuals projection in the first axis of a PCA. Individuals are colorized according to their belonging to each clusters. Each clusters is represented by a centroid and an elliptical dispersion.
-![pca](/images/pca.png)
+![pca](inst/extdata/img/pca.png)
 - ```summary.tsv``` : for each partitioning, the between- and the (sum of the) within-inertia, the between-inertia differences with the previous partition, the average silhouette width.
 
 Nb. clusters | Between-inertia (%) | Between-differences (%) | Within-inertia (%) | Silhouette index | Gap | Gap SE
@@ -43,20 +41,20 @@ D-glucose | 2 | 0.62 | -9.03 | -1.34
 ##### Agglomerative hierachical clustering mode (by default)
 
 - ```shepard_graph.pdf``` : Correlation between the distance matrix and the agglomerative metric used by the AHC. The squarred correlation is the % of variance of the model. This index is always the best for UPGMA and the worst for Ward. 
-![shepard_graph](/images/shepard_graph.png)
+![shepard_graph](inst/extdata/img/shepard_graph.png)
 - ```fusion_levels.pdf``` : Differences in branch height with the next agglomeration step. The optimal number of clusters should be the largest one.
-![fusion_levels](/images/fusion_levels.png) 
+![fusion_levels](inst/extdata/img/fusion_levels.png) 
 - ```dendrogram.pdf``` : Agglomerative tree for all paired combinations and the colored chosen clusters.
-![dendrogram](/images/dendrogram.png)
+![dendrogram](inst/extdata/img/dendrogram.png)
 
 ##### Advanced mode 
 
 - ```elbow.pdf``` : Optimal number of clusters according to the between inertia loss per partition (x: number of clusters; y: relative within inertia). 
-![elbow](/images/elbow.png)
+![elbow](inst/extdata/img/elbow.png)
 - ```gap_statistics.pdf``` : Best clustering according to the the gap statistics (see below; x: number of clusters; y: within inertia gap). The optimal number of clusters is the greater gap statistic in comparison to the gap statistics from the next partitioning and its standard deviation (Tibshirani et al., 2001). 
-![gap_statistics](/images/gap_statistics.png)
+![gap_statistics](inst/extdata/img/gap_statistics.png)
 - ```log_w_diff.pdf``` : Differences between the within-inertia log from the dataset and from a random bootstrap, also called gap statistics.
-![log_w_diff](/images/log_w_diff.png)
+![log_w_diff](inst/extdata/img/log_w_diff.png)
 - ```contribution.tsv``` : contribution of each columns to the inertia of each clusters for the optimal partitioning.
 
 - ```discriminant_power.tsv``` : contribution of each columns to the inertia of each partitioning.
@@ -68,26 +66,28 @@ Nb. clusters | Cluster 1 | Cluster 2 | Cluster 3
 2 | 0.12 | 0.87 | 
 3 | 0.21 | 0.08 | 0.69
 
+## Installation
+Required:
+- Softwares : R (≥ 3.3.0)
+- R libraries : see the [DESCRIPTION](DESCRIPTION) file.
 
-## Key features
-- Metabolic network
-- Modeling
-- Clustering
-- Prediction
+### Windows & Mac
+Click on the green button in the upper right corner ```Clone and Download``` and then ```Download the ZIP```. Extract the file. After installing [Rstudio](https://www.rstudio.com/products/rstudio/download/#download), in the upper menu, go to "Tools", "Install packages" and select "install from: package archive file" and select your downloaded file.
 
-## Functionality
-- Post-processing
-- Statistical Analysis
+### Linux
+```
+devtools::install_github("ecamenen/autoCluster")
+```
 
-## Tool Authors
-- MetExplore Group contact-metexplore@inra.fr
-- Etienne Camenen (INRA Toulouse)
+## Launch the app
+In RStudio, execute:
+```
+autoCluster::run_app()
+```
 
-## Git Repository
-- https://github.com/MetExplore/phnmnl-FingerprintClustering.git
+Or open ```app.R```. Then, the application could be launched by clicking on the ```Run App button``` in the upper right corner of the script menu bar.
 
-
-## Usage Instructions
+## Command line interface
 For direct usage :
 
 ```
@@ -122,6 +122,5 @@ Rscript launcher.R --infile <input_file> [--help] [--verbose] [--quiet] [--heade
 
 
 ## References
-- Cottret, L., Frainay, C., Chazalviel, M., et al. (2018). MetExplore: collaborative edition and exploration of metabolic networks. Nucleic acids research, 1.
 - Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. Journal of computational and applied mathematics, 20, 53-65.
 - Tibshirani, R., Walther, G., & Hastie, T. (2001). Estimating the number of clusters in a data set via the gap statistic. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 63(2), 411-423.

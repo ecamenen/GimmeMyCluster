@@ -14,7 +14,7 @@ app_ui <- function(request) {
         "WPGMC" = 8,
         "UPGMC" = 9
     )
-    jscode <- "shinyjs.refresh = function() { location.reload(); }"
+    jscode <- "shinyjs.refreshed = function() { location.reload(); }"
 
     # min-max: minimum and maximum position number in the list
     getClassifKeys <- function(min, max) {
@@ -35,15 +35,20 @@ app_ui <- function(request) {
                 "Maxime CHAZALVIEL, Fabien JOURDAN"
             ),
             h4(
-                paste0(
+                paste(
                     "Performs unsupervised clustering and automatically",
                     "determine the best number of cluster."
-                )
+                ),
+                tags$br(),
+                tags$br(),
+                tags$a(href = "https://github.com/ecamenen/autoCluster/blob/master/README.md", "Go to the tutorial"),
+                tags$br(),
+                tags$br()
             ),
             sidebarLayout(
                 sidebarPanel(
                     useShinyjs(),
-                    extendShinyjs(text = jscode, functions = "refresh"),
+                    extendShinyjs(text = jscode, functions = "refreshed"),
                     fileInput(
                         inputId = "infile",
                         label = h5("Choose a file: ")

@@ -61,18 +61,7 @@ app_server <- function(input, output, session) {
         ctr_clus_plot = NULL,
         ctr_clus = NULL
     )
-    tryCatch(
-        {
-            vars$data <- loadData("inst/extdata/matrix.txt")
-        },
-        warning = function(w) {
-            vars$data <- NULL
-            message("Default file \"matrix.txt\" is not in the folder. Please, load another one.")
-        },
-        error = function(e) {
-            vars$data <- NULL
-        }
-    )
+    vars$data <- data("metabolomic_fingerprint", envir = environment())
 
     loadData <- function(f, s = "\t", h = FALSE) {
         # !file.exists(

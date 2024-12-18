@@ -10,3 +10,4 @@
 dev/
 inst/extdata/
 *.tar.gz
+inst/doc

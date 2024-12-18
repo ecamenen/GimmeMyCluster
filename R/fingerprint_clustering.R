@@ -282,6 +282,7 @@ plotAxis <- function(side, min, max, interval = 1, lwd = 3) {
     axis(side, seq(min, max, interval), lwd = lwd)
 }
 
+#' @export
 plotBestClustering <- function(
     sub_title,
     values,
@@ -389,6 +390,7 @@ savePdf <- function(f) {
 # Get the normalized distance between each points and the center
 # Outputs:
 # for each column, the mean=0 and the variance is the same
+#' @export
 scalecenter <- function(d) {
     # output scale function: for each column, mean=0, sd=1
     return(scale(d) * sqrt(nrow(d) / (nrow(d) - 1)))
@@ -398,6 +400,7 @@ scalecenter <- function(d) {
 
 # df: dataframe
 # d: distance type
+#' @export
 getDistance <- function(df, d) {
     dists <- c("euclidian", "manhattan", 1, 2, 5, 7)
 
@@ -527,6 +530,7 @@ getClassif <- function(t, n, df, d) {
 # c: hierarchical classification
 # d: data
 # Output: partitionning contening k clusters
+#' @export
 getClusters <- function(k, c) {
     if (c$method == "kmedoids") {
         c[[k]]$clustering
@@ -537,6 +541,7 @@ getClusters <- function(k, c) {
     }
 }
 
+#' @export
 getClusterPerPart <- function(n, c) {
     cl <- list()
     for (k in 2:n) {
@@ -573,6 +578,7 @@ writeClusters <- function(f, sil_k, pca, v = FALSE) {
 # Inputs:
 # d : distance matrix
 # cah : hierarchical classification
+#' @export
 plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
     coph_matrix <- cophenetic(cah)
     cor_coph <- cor(d, coph_matrix)
@@ -719,6 +725,7 @@ plotBetweenDiff <- function(between_diff, verbose = FALSE) {
     # suprLog = dev.off()
 }
 
+#' @export
 plotFusionLevels <- function(n, c, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nFUSION LEVELS:\n")
@@ -753,6 +760,7 @@ plotFusionLevels <- function(n, c, verbose = FALSE) {
 }
 
 # x: vector of between inertia for k partitions
+#' @export
 plotElbow <- function(x, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nELBOW:\n")
@@ -848,6 +856,7 @@ plotSilhouettePerPart <- function(mean_silhouette, sil = sil, verbose = FALSE) {
 }
 
 # sil_k: a silhouette object
+#' @export
 plotSilhouette <- function(sil_k) {
     # pdf(opt$output2)
     setGraphicBasic()
@@ -880,6 +889,7 @@ plotSilhouette <- function(sil_k) {
 ###################################
 
 # B: nb of NB_BOOTSTRAP
+#' @export
 getGapPerPart <- function(n, d, c, B = 500, v = FALSE) {
     # FUN mus have only two args in this order and return a list with an object cluster
 
@@ -907,6 +917,7 @@ getGapBest <- function(g, M = "Tibs2001SEmax") {
 
 # Plot the gap statistics width for all clustering possible
 # TODO: HERE
+#' @export
 plotGapPerPart <- function(g, n, verbose = FALSE) {
     setGraphic()
     # savePdf("gap_statistics.pdf")
@@ -950,6 +961,7 @@ plotGapPerPart <- function(g, n, verbose = FALSE) {
 }
 
 # Plot the gap between the two function: within and random within average
+#' @export
 plotGapPerPart2 <- function(g, n) {
     setGraphic()
     # savePdf("log_w_diff.pdf")
@@ -998,6 +1010,7 @@ plotGapPerPart2 <- function(g, n) {
     # suprLog = dev.off()
 }
 
+#' @export
 printSummary <- function(between, diff, sil, adv, gap = NULL) {
     # TODO: no n = nrow(data)
     summary <- cbind(between, diff, 100 - between, sil)
@@ -1066,6 +1079,7 @@ getOrderedClusterSize <- function(cl) {
 # s: an organised silhouette object
 # c: CAH
 # c: clusters from CAH
+#' @export
 heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbose = FALSE) {
     printProgress(verbose, "Heatmap calculation")
     text <- isTRUE(isTRUE(TEXT) & (nrow(data) < 100))
@@ -1239,6 +1253,7 @@ orderColors <- function(c, cl) {
 ################################
 
 # nf: number of factorial axis
+#' @export
 plotPca <- function(pca, d, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png = FALSE) {
     k <- length(levels(as.factor(cl)))
 

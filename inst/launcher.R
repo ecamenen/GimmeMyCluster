@@ -116,7 +116,7 @@ getArgs <- function() {
             type = "integer",
             default = 3,
             metavar = "integer",
-            help = "Type of classification [default: Complete links] (1: K-menoids; 2: K-means; 3: Ward; 4: Complete links; 5: Single links; 6: UPGMA; 7: WPGMA; 8: WPGMC; 9: UPGMC)"
+            help = "Type of classification [default: Complete links] (1: K-medoids; 2: K-means; 3: Ward; 4: Complete links; 5: Single links; 6: UPGMA; 7: WPGMA; 8: WPGMC; 9: UPGMC)"
         ),
         make_option(
             c("-a", "--advanced"),

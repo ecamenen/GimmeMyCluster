@@ -11,7 +11,7 @@ app_server <- function(input, output, session) {
     DIM_PNG <- 3000
     MAX_CHAR_LEN <- 25 # maximum length of individual s names
     classif_methods <- list(
-        "K-menoids" = 1,
+        "K-medoids" = 1,
         "K-means" = 2,
         "Ward" = 3,
         "Complete links" = 4,

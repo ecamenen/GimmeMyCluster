@@ -4,7 +4,7 @@
 #' @noRd
 app_ui <- function(request) {
     classif_methods <- list(
-        "K-menoids" = 1,
+        "K-medoids" = 1,
         "K-means" = 2,
         "Ward" = 3,
         "Complete links" = 4,

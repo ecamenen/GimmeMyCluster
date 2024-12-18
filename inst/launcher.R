@@ -7,7 +7,7 @@ VERBOSE <- FALSE
 MAX_CHAR_LEN <- 25 # maximum length of individual s names
 
 library("optparse")
-library("autoCluster")
+library("GimmeMyCluster")
 source("R/fingerprint_clustering.R")
 source("R/plot.R")
 

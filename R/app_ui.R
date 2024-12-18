@@ -41,7 +41,7 @@ app_ui <- function(request) {
                 ),
                 tags$br(),
                 tags$br(),
-                tags$a(href = "https://github.com/ecamenen/autoCluster/blob/master/README.md", "Read the tutorial"),
+                tags$a(href = "https://github.com/ecamenen/GimmeMyCluster/blob/master/README.md", "Read the tutorial"),
                 tags$br(),
                 tags$br()
             ),
@@ -254,7 +254,7 @@ golem_add_external_resources <- function() {
         favicon(),
         bundle_resources(
             path = app_sys("app/www"),
-            app_title = "autoCluster"
+            app_title = "GimmeMyCluster"
         )
     )
 }

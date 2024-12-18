@@ -1,5 +1,5 @@
 
-# \[Autoclus\] - Automatic clustering
+# \[GimmeMyCluster\] - Automatic clustering
 
 ##### Version:
 
@@ -14,7 +14,7 @@ optimal number of clusters using the Silhouette index. It provides
 various visualizations to aid in the interpretation and validation of
 cluster analysis.
 
-##### Server: <https://ecamenen.shinyapps.io/autoClus/>
+##### Server: <https://ecamenen.shinyapps.io/GimmeMyCluster/>
 
 ##### EDAM operation:
 
@@ -170,13 +170,13 @@ from: package archive file” and select your downloaded file.
 
 ### Linux
 
-    devtools::install_github("ecamenen/autoCluster")
+    devtools::install_github("ecamenen/GimmeMyCluster")
 
 ## Launch the app
 
 In RStudio, execute:
 
-    autoCluster::run_app()
+    GimmeMyCluster::run_app()
 
 Or open `app.R`. Then, the application could be launched by clicking on
 the `Run App button` in the upper right corner of the script menu bar.

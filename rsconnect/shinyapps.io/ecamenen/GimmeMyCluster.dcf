@@ -1,0 +1,10 @@
+name: GimmeMyCluster
+title: Performs unsupervised clustering and automatically determines the optimal number of clusters.
+username: ecamenen
+account: ecamenen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13616983
+bundleId: 9539090
+url: https://ecamenen.shinyapps.io/GimmeMyCluster/
+version: 1

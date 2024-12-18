@@ -8,10 +8,10 @@ app_server <- function(input, output, session) {
     NB_BOOTSTRAP <- 500 # should be comprise between 100 and 1000
     TEXT <- TRUE # print values on graph (for optimum partition and heatmap)
     NB_ROW_MAX <- 200 # max row to have pdf, otherwise, some plots are in png
-    DIM_PNG <- 2000
+    DIM_PNG <- 3000
     MAX_CHAR_LEN <- 25 # maximum length of individual s names
     classif_methods <- list(
-        "K-menoids" = 1,
+        "K-medoids" = 1,
         "K-means" = 2,
         "Ward" = 3,
         "Complete links" = 4,
@@ -339,7 +339,7 @@ app_server <- function(input, output, session) {
     # func: plot function
     savePlot <- function(f, func) {
         f <- paste(f, ".tiff", sep = "")
-        tiff(f, res = 300, width = 700, height = 800)
+        tiff(f, res = 300, width = DIM_PNG, height = DIM_PNG)
         func
         suprLog <- dev.off()
     }

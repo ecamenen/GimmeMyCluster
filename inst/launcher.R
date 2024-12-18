@@ -1,13 +1,13 @@
 # Global variables settings
 TEXT <- TRUE # print values on graph (for optimum partition and heatmap)
 NB_ROW_MAX <- 200 # max row to have pdf, otherwise, some plots are in png
-DIM_PNG <- 2000
+DIM_PNG <- 3000
 VERBOSE_NIV2 <- FALSE
 VERBOSE <- FALSE
 MAX_CHAR_LEN <- 25 # maximum length of individual s names
 
 library("optparse")
-library("autoCluster")
+library("GimmeMyCluster")
 source("R/fingerprint_clustering.R")
 source("R/plot.R")
 

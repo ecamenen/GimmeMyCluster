@@ -1,4 +1,4 @@
 library(testthat)
-library(autoCluster)
+library(GimmeMyCluster)
 
-test_check("autoCluster")
+test_check("GimmeMyCluster")

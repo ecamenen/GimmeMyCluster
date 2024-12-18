@@ -1,6 +1,6 @@
 default:
-  golem_name: autoCluster
-  golem_version: 4.0.0
+  golem_name: GimmeMyCluster
+  golem_version: 4.0.1
   app_prod: no
 production:
   app_prod: yes

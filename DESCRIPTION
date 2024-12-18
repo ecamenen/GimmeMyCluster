@@ -1,6 +1,6 @@
-Package: autoCluster
+Package: GimmeMyCluster
 Title: Automatic Clustering
-Version: 4.0.0
+Version: 4.0.1
 Authors@R: 
     c(person(given = "Etienne",
              family = "Camenen",

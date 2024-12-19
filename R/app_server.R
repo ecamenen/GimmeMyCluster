@@ -61,7 +61,6 @@ app_server <- function(input, output, session) {
         ctr_clus_plot = NULL,
         ctr_clus = NULL
     )
-    vars$data <- data("metabolomic_fingerprint", envir = environment())
 
     loadData <- function(f, s = "\t", h = FALSE) {
         # !file.exists(
@@ -126,7 +125,7 @@ app_server <- function(input, output, session) {
         if (vars$verbose2) {
             cat("done.\n")
         }
-        vars$clusters <- getClusterPerPart(vars$max_clusters + 1, vars$classif)
+        vars$clusters <- getClusterPerPart(vars$max_clusters, vars$classif)
 
         # inertia
         vars$between <- getRelativeBetweenPerPart(vars$max_clusters, vars$data, vars$clusters)
@@ -143,7 +142,7 @@ app_server <- function(input, output, session) {
             cat("done.\n")
         }
 
-        vars$sils <- getSilhouettePerPart(vars$data, vars$clusters, vars$dis)
+        vars$sils <- getSilhouettePerPart(vars$clusters, vars$dis)
         vars$mean_sils <- getMeanSilhouettePerPart(vars$sils)
 
         setClusters()
@@ -204,14 +203,12 @@ app_server <- function(input, output, session) {
             vars$png
           )
         )
-        vars$plotBest <- expr(plotSilhouettePerPart(vars$mean_sils, vars$sils))
+        vars$plotBest <- expr(plotSilhouettePerPart(vars$mean_sils))
         vars$plotSil <- expr(plotSilhouette(vars$sil_k))
         vars$plotDend <- expr(
           plotDendrogram(
-                    vars$classif_type,
                     vars$optimal_k,
                     vars$classif,
-                    vars$data,
                     vars$max_clusters,
                     vars$cl_k
                 )
@@ -278,14 +275,12 @@ app_server <- function(input, output, session) {
             vars$between,
             vars$diff_between,
             vars$mean_sils,
-            vars$advanced,
             vars$gap
             )
         )
         vars$ctr_part <- expr(
           100 * 
             getPdisPerPartition(
-              vars$classif_type,
               vars$max_clusters,
               vars$clusters,
               vars$data
@@ -294,7 +289,6 @@ app_server <- function(input, output, session) {
         vars$centroids <- expr(getDistPerVariable(vars$data, vars$cl_k))
         vars$disc <- expr(
           getDiscriminantVariables(
-                vars$classif_type,
                 vars$optimal_k,
                 vars$cl_k,
                 vars$data,
@@ -302,7 +296,7 @@ app_server <- function(input, output, session) {
             )
         )
         vars$ctr_clus_plot <- expr(plotDiscriminantVariables(eval(vars$disc)))
-        vars$ctr_clus <- expr(100 * getCtrVar(vars$classif_type, vars$optimal_k, vars$cl_k, vars$data))
+        vars$ctr_clus <- expr(100 * getCtrVar(vars$optimal_k, vars$cl_k, vars$data))
         writeTsv(eval(vars$disc), "discr_var.tsv", v = FALSE)
     }
 

@@ -503,22 +503,29 @@ getCoefAggl <- function(c) {
 # d: distance for pam
 # k: number of clusterting
 # Ouput: Non-hierarchical classification
-getCNH <- function(t, df, d, k) {
+getCNH <- function(t, df, d, k, centers = NULL, nrun = 100) {
     if (t == 1) {
+        if (!is.null(centers)) {
+            return(pam(d, k, diss = TRUE, medoids = centers))
+        }
         return(pam(d, k, diss = TRUE))
     } else if (t == 2) {
         checkEuclidean(d)
-        return(kmeans(df, centers = k, nstart = 100))
+        if (!is.null(centers)) {
+            k <- centers
+        }
+        return(kmeans(df, centers = k, nstart = nrun))
     }
 }
 
-getClassif <- function(t, n, df, d) {
+#' @export
+getClassif <- function(t, n, df, d, centers = NULL, nrun = 100) {
     if (t > 2) {
         getCAH(t, df, d)
     } else {
         list_cnh <- list("method" = getClassifType(t))
         for (k in 2:(n + 1)) {
-            list_cnh[[k]] <- getCNH(t, df, d, k)
+            list_cnh[[k]] <- getCNH(t, df, d, k, centers = centers[[k - 1]], nrun = nrun)
         }
         return(list_cnh)
     }
@@ -640,6 +647,7 @@ plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
 # n: maximum number of clusters
 # d: dataframe
 # cl: list of clusters per partition
+#' @export
 getRelativeBetweenPerPart <- function(n, d, cl) {
     d <- as.matrix(d)
     between <- rep(0, n - 1)
@@ -664,6 +672,7 @@ getClusterCentroids <- function(d, cl) {
 }
 
 # Difference between each case of a vector
+#' @export
 getBetweenDifferences <- function(between) {
     # apply produce a list, unlist convert in vector
     diff <- unlist(sapply(1:length(between), function(i) between[i] - between[i - 1]))
@@ -679,12 +688,13 @@ getWithin <- function(d, cl, k) {
 }
 
 # cl: list of clusters per partition
+#' @export
 getRelativeWithinPerCluster <- function(cls, d) {
     n <- length(cls)
-    within <- matrix(NA, n - 1, n)
-    rownames(within) <- seq(2, n)
-    colnames(within) <- paste("G", seq(1, n), sep = "")
-    for (k in 2:n) {
+    within <- matrix(NA, n, n + 1)
+    rownames(within) <- seq(2, n + 1)
+    colnames(within) <- paste("G", seq(1, n + 1), sep = "")
+    for (k in 2:(n + 1)) {
         cl <- cls[[k - 1]]
         for (i in 1:length(table(cl))) {
             within[k - 1, i] <- getWithin(d, cl, i)
@@ -802,35 +812,39 @@ plotElbow <- function(x, verbose = FALSE) {
 ################################
 
 # Ouput: an ordered silhouette object
-getSilhouette <- function(df, cl_k, d) {
+#' @export
+getSilhouette <- function(cl_k, d) {
     s <- sortSilhouette(silhouette(cl_k, d))
-    rownames(s) <- row.names(df)[attr(s, "iOrd")]
+    rownames(s) <- labels(d)[attr(s, "iOrd")]
     return(s)
 }
 
-getSilhouettePerPart <- function(df, cl, d) {
+#' @export
+getSilhouettePerPart <- function(cl, d) {
     list_sil <- list()
-    for (k in 2:length(cl)) {
-        list_sil[[k - 1]] <- getSilhouette(df, cl[[k - 1]], d)
+    for (k in 2:(length(cl) + 1)) {
+        list_sil[[k - 1]] <- getSilhouette(cl[[k - 1]], d)
     }
     return(list_sil)
 }
 
 # sils: list of silhouettes objects per partition
+#' @export
 getMeanSilhouettePerPart <- function(sils) {
     unlist(sapply(1:length(sils), function(i) summary(sils[[i]])$avg.width))
 }
 
 # Plot the best average silhouette width for all clustering possible
 # mean_sils: vector of silhouette average width
-plotSilhouettePerPart <- function(mean_silhouette, sil = sil, verbose = FALSE) {
+#' @export
+plotSilhouettePerPart <- function(mean_silhouette, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nSILHOUETTE:\n")
     }
     setGraphic()
     # savePdf(opt$output1)
     optimal_nb_clusters <- which.max(mean_silhouette) + 1
-    n <- length(sil)
+    n <- length(mean_silhouette)
     plot(
         2:(n + 1),
         mean_silhouette,
@@ -1011,7 +1025,7 @@ plotGapPerPart2 <- function(g, n) {
 }
 
 #' @export
-printSummary <- function(between, diff, sil, adv, gap = NULL) {
+printSummary <- function(between, diff, sil, gap = NULL) {
     # TODO: no n = nrow(data)
     summary <- cbind(between, diff, 100 - between, sil)
     names <- c(
@@ -1078,9 +1092,10 @@ getOrderedClusterSize <- function(cl) {
 # d: a distance object
 # s: an organised silhouette object
 # c: CAH
-# c: clusters from CAH
+# cl: clusters from CAH
 #' @export
 heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbose = FALSE) {
+    plot.new()
     printProgress(verbose, "Heatmap calculation")
     text <- isTRUE(isTRUE(TEXT) & (nrow(data) < 100))
 
@@ -1203,9 +1218,10 @@ heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbos
 
 # Inputs:
 # k: number of clusters
-plotDendrogram <- function(t, k, c, d, n, cl) {
-    if (nrow(d) > NB_ROW_MAX) {
-        c$labels <- 1:nrow(d)
+#' @export
+plotDendrogram <- function(k, c, n, cl) {
+    if (length(cl) > NB_ROW_MAX) {
+        c$labels <- 1:length(cl)
         cex <- 0.4
     } else {
         cex <- 0.8
@@ -1386,10 +1402,13 @@ getDistPerVariable <- function(d, cl) {
         # in the dataset, for a metabolite row, loop an each metadabolite column
         # values are affected the corresponding cluster row and metabolite column in ctr
         for (j in 1:ncol(d)) {
-            ctr[cli, j] <- ctr[cli, j] + d[i, j]
+            if(!is.na(d[i, j])) {
+                ctr[cli, j] <- ctr[cli, j] + d[i, j]
+            }
         }
     }
-
+    colnames(ctr) <- colnames(d)
+    rownames(ctr) <- unique(cl)
     return(ctr)
 }
 
@@ -1400,7 +1419,9 @@ getDistPerVariable <- function(d, cl) {
 # k: number of clusters
 # c: hierarchical classification
 # d: data
-getCtrVar <- function(t, k, cl, d) {
+#' @export
+getCtrVar <- function(k, cl, d) {
+
     # if NA values appear, scale 0/0 could produce NA values, NA could correspond to 0
     nb_cl <- length(levels(as.factor(cl)))
     ncol <- ncol(d)
@@ -1411,19 +1432,19 @@ getCtrVar <- function(t, k, cl, d) {
 
     for (i in 1:nb_cl) {
         for (j in 1:ncol(d)) {
-            ctr[i, j] <-
-                ctr[i, j]^2 / (nrow(d) * length(cl[cl == i]))
+            ctr[i, j] <- ctr[i, j]^2 / (nrow(d) * length(cl[cl == i]))
         }
     }
 
     return(ctr)
 }
 
-getCtrVar2 <- function(t, k, cl, d, scale = TRUE) {
-    ctr <- getCtrVar(t, k, cl, d)
+getCtrVar2 <- function(k, cl, d, scale = TRUE) {
+    ctr <- getCtrVar(k, cl, d)
+    nb_cl <- length(levels(as.factor(cl)))
 
     if (isTRUE(scale)) {
-        ctr_part <- getPdis(t, k, cl, d)
+        ctr_part <- getPdis(k, cl, d)
 
         for (i in 1:nb_cl) {
             for (j in 1:ncol(d)) {
@@ -1440,28 +1461,28 @@ getCtrVar2 <- function(t, k, cl, d, scale = TRUE) {
 # Discriminant power (PDIS)
 # Relative contributions of the metabolites to inertia of a partitionning (in %)
 # Inputs:
-# t: number of type of classification
 # k: number of clusters
 # c: hierarchical classification
 # d: data
-getPdis <- function(t, k, cl, d) {
+getPdis <- function(k, cl, d) {
+
     # for each metabolite contribution (in column), sum the k clusters values
-    return(apply(getCtrVar(t, k, cl, d), 2, sum))
+    return(apply(getCtrVar(k, cl, d), 2, sum))
 }
 
 # Inputs:
-# t: number of type of classification
 # n: number max of clusters
 # cls: list of clusters
 # d: data
 # index: pdis or rho2 calculation
-getPdisPerPartition <- function(t, n, cls, d) {
+#' @export
+getPdisPerPartition <- function(n, cls, d) {
     pdis_per_partition <- matrix(NA, n - 1, ncol(d))
     rownames(pdis_per_partition) <- seq(2, n)
     colnames(pdis_per_partition) <- colnames(d)
 
     for (k in 2:n) {
-        res <- getPdis(t, k, cls[[k - 1]], d)
+        res <- getPdis(k, cls[[k - 1]], d)
         for (i in 1:length(res)) {
             pdis_per_partition[k - 1, i] <- res[i]
         }

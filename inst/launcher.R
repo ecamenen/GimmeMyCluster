@@ -319,7 +319,6 @@ clusters <- list_clus[[optimal_nb_clusters - 1]]
 
 NB_BIOMARK <- 20
 discr <- getDiscriminantVariables(
-    CLASSIF_TYPE,
     optimal_nb_clusters,
     clusters,
     data,
@@ -328,13 +327,12 @@ discr <- getDiscriminantVariables(
 plotDiscriminantVariables(discr)
 
 discriminant_power <- getPdisPerPartition(
-    CLASSIF_TYPE,
     MAX_CLUSTERS,
     list_clus,
     data
 ) * 100
 
 # Silhouette analysis
-sil <- getSilhouettePerPart(data, list_clus, dis)
+sil <- getSilhouettePerPart(list_clus, dis)
 mean_silhouette <- getMeanSilhouettePerPart(sil)
-plotSilhouettePerPart(mean_silhouette, sil, VERBOSE)
+plotSilhouettePerPart(mean_silhouette, VERBOSE)

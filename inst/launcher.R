@@ -147,7 +147,7 @@ getArgs <- function() {
             type = "integer",
             default = 1,
             metavar = "integer",
-            help = "Type of distance [default: Euclidian] (1: Euclidian, 2: Manhattan, 3: Jaccard, 4: Sokal & Michener, 5 Sorensen (Dice), 6: Ochiai)"
+            help = "Type of distance [default: Euclidean] (1: Euclidean, 2: Manhattan, 3: Jaccard, 4: Sokal & Michener, 5 Sorensen (Dice), 6: Ochiai)"
         ),
         make_option(
             c("-H", "--header"),
@@ -206,7 +206,7 @@ checkArg <- function(a) {
     }
 
     if ((opt$distance < 1) || (opt$distance > 6)) {
-        stop("--distance must be comprise between 1 and 6 [by default: 1 for Euclidian].\n", call. = FALSE)
+        stop("--distance must be comprise between 1 and 6 [by default: 1 for Euclidean].\n", call. = FALSE)
     }
 
 

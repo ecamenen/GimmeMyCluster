@@ -402,7 +402,7 @@ scalecenter <- function(d) {
 # d: distance type
 #' @export
 getDistance <- function(df, d) {
-    dists <- c("euclidian", "manhattan", 1, 2, 5, 7)
+    dists <- c("euclidean", "manhattan", 1, 2, 5, 7)
 
     if (d < 3) {
         dist(df, method = dists[d])
@@ -1384,6 +1384,18 @@ plotInertiaPca <- function(pca, d, nf = 4) {
 #            Variables contribution
 #########################################
 
+#' @export
+getDistPerVariable0 <- function(d, cl) {
+    nb_cl <- max(cl)
+    i_rows <- sapply(seq(nb_cl), function(i) {
+        which(cl == i)
+    })
+    sapply(seq(nb_cl), function(i) {
+        apply(d[i_rows[[i]], , drop = FALSE], 2, function(j) {
+            mean(j, na.rm = TRUE)
+        })
+    }) %>% t() %>% set_rownames(paste0("G", seq(nb_cl)))
+}
 # For a given partition (cl) and each variables (dataset columns)
 # pondered distance between the centroid of each clusters and the global centroid of the cloud
 # Inputs:

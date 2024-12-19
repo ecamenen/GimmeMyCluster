@@ -25,8 +25,8 @@ app_ui <- function(request) {
     tagList(
         golem_add_external_resources(),
         fluidPage(
-            title = "Automatic Clustering",
-            h1(toupper("Automatic Clustering")),
+            title = golem::get_golem_name(),
+            h1(golem::get_golem_name()),
             tags$p(
                 tags$a(
                     href = "https://github.com/ecamenen/tcgaViz",
@@ -53,7 +53,8 @@ app_ui <- function(request) {
                         inputId = "infile",
                         label = h5("Choose a file: ")
                     ),
-                    checkboxInput("header",
+                    checkboxInput(
+                        "header",
                         "Consider first row as header",
                         value = TRUE
                     ),
@@ -67,11 +68,13 @@ app_ui <- function(request) {
                         ),
                         selected = "\t"
                     ),
-                    checkboxInput("scale",
+                    checkboxInput(
+                        "scale",
                         "Scale",
                         value = TRUE
                     ),
-                    checkboxInput("transpose",
+                    checkboxInput(
+                        "transpose",
                         "Transpose",
                         value = FALSE
                     ),
@@ -112,7 +115,8 @@ app_ui <- function(request) {
                         max = 100,
                         value = 10
                     ),
-                    checkboxInput("advanced",
+                    checkboxInput(
+                        "advanced",
                         "Advanced mode",
                         value = FALSE
                     ),

@@ -16,8 +16,107 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library("GimmeMyCluster")
-classif_method <- "ward"
-distance_method <- "euclidean"
+library("tidyverse")
+library("magrittr")
+library("ade4")
 max_cluster <- 6
 # color_clusters <- GimmeMyPlot:::palette_discrette()
 ```
+
+```{r, results="hide"}
+pretty_table <- function(x) {
+  as_tibble(x) %>%
+    mutate(`Nb. cluster` = 2:max_cluster) %>% 
+    relocate(`Nb. cluster`)
+}
+
+pretty_table0 <- function(x, k) {
+  as_tibble(x) %>%
+    mutate(`Clusters` = 1:k) %>% 
+    relocate(`Clusters`)
+}
+```
+
+
+```{r data}
+data("metabolomic_fingerprint", envir = environment())
+head(metabolomic_fingerprint)
+df <- metabolomic_fingerprint %>%
+    column_to_rownames("Metabolites")
+```
+
+```{r analysis}
+# Optional: data scaling
+df_scaled <- scale(df)
+# Distance calculation
+dist <- getDistance(df_scaled, 1)
+# Clustering
+clustering <- getClassif(3, max_cluster, df_scaled, dist)
+# Cluster extraction
+cls <- getClusterPerPart(max_cluster, clustering)
+```
+
+```{r quality check}
+# Choose the best number of clusters
+sil <- getSilhouettePerPart(cls, dist) %>%
+  getMeanSilhouettePerPart()
+plotSilhouettePerPart(sil)
+optimal_k <- which.max(sil) + 1
+
+# Best clustering
+cl <- cls[[optimal_k - 1]]
+
+# Cluster belonging probability by samples
+getSilhouette(cl, dist) %>% plotSilhouette()
+
+# Quality check summary
+between <- getRelativeBetweenPerPart(max_cluster, df_scaled, cls)
+diff <- getBetweenDifferences(between)
+printSummary(between, diff, sil) %>% pretty_table()
+```
+
+```{r plot}
+dev.off()
+plotDendrogram(k, clustering, max_cluster, cl)
+
+pca <- dudi.pca(df_scaled, scannf = FALSE, scale = FALSE, nf = 4)
+plotPca(pca, df_scaled, cl, advanced = TRUE)
+heatMap(df_scaled, dist, c = clustering, cl = cl)
+```
+
+# Variable contribution
+```{r ctr}
+# Variable contribution per partitioning (in %)
+getPdisPerPartition(max_cluster, cls, df_scaled) %>% multiply_by(100) %>% pretty_table()
+
+# Mean variable value per cluster
+getDistPerVariable0(df_scaled, cl) %>% pretty_table0(optimal_k)
+
+# Top contributing variable (in %)
+getDiscriminantVariables(k, cl, df_scaled, 10) %>%
+  plotDiscriminantVariables()
+
+getCtrVar(k, cl, df_scaled) %>% multiply_by(100) %>% pretty_table0(optimal_k)
+```
+
+# Advanced
+```{r adv}
+# Difference in branch heigh with the previous partitioning
+plotFusionLevels(max_cluster, clustering)
+
+# Correlation between data and the distance matrix of the clustering ( = cophenetic)
+plotCohenetic(dist, clustering)
+
+# Within-inertia (to minimize) between each cluster (for each partitioning)
+getRelativeWithinPerCluster(cls, df_scaled) %>% pretty_table()
+
+# Decrease of the total within-inertia per clustering
+plotElbow(between)
+
+# Calculating a gap between a theoretical within-inertia distribution and the observations
+gap_statistics <- getGapPerPart(max_cluster, df_scaled, clustering)
+plotGapPerPart(gap_statistics, max_cluster)
+plotGapPerPart2(gap_statistics, max_cluster)
+printSummary(between, diff, sil, gap = gap_statistics)  %>% pretty_table()
+```
+

@@ -225,19 +225,22 @@ writeTsv <- function(x, f = NULL, cl = FALSE, verbose = TRUE) {
 #          Graphic
 ################################
 
+palette_perso <- function() {
+  c(
+  rgb(0.6, 0.1, 0.5, 1),
+  rgb(1, 0, 0, 1),
+  rgb(0.9, 0.6, 0, 1),
+  rgb(0.1, 0.6, 0.3, 1),
+  rgb(0.1, 0.6, 0.5, 1),
+  rgb(0, 0, 1, 1)
+)
+}
+
 # Usage: colPers(x), x a number of colours in output
 # Gradient of color
-colPers <- colorRampPalette(c(
-    rgb(0.6, 0.1, 0.5, 1),
-    rgb(1, 0, 0, 1),
-    rgb(0.9, 0.6, 0, 1),
-    rgb(0.1, 0.6, 0.3, 1),
-    rgb(0.1, 0.6, 0.5, 1),
-    rgb(0, 0, 1, 1)
-),
-alpha = TRUE
-)
-
+colPers <- function(colour = palette_perso()) {
+  colorRampPalette(colour, alpha = TRUE)
+}
 
 setGraphic <- function() {
     setGraphicBasic()
@@ -537,10 +540,10 @@ getClusterPerPart <- function(x, max_cluster = 6) {
 
 # Input:
 # x: clusters
-colorClusters <- function(x) {
+colorClusters <- function(x, colour = palette_perso()) {
     NB_CLUSTERS <- length(levels(as.factor(x)))
     for (i in 1:NB_CLUSTERS) {
-        x[x == i] <- colPers(NB_CLUSTERS)[i]
+        x[x == i] <- colPers(colour)(NB_CLUSTERS)[i]
     }
     return(x)
 }
@@ -858,7 +861,7 @@ plotSilhouettePerPart <- function(x, verbose = FALSE) {
 #' @export
 plotSilhouette <- function(x, colour = NULL) {
   if (is.null(colour)) {
-    colour <- colorClusters(x[, 1])
+    colour <- colorClusters(x[, 1], colour = palette_perso())
   }
     # pdf(opt$output2)
     # setGraphicBasic()
@@ -1036,7 +1039,7 @@ printSummary <- function(between, diff, sil, gap = NULL) {
 
 # Inputs:
 # x: vector of size for each clusters
-plotRect <- function(x, colors, lwd = 3) {
+plotRect <- function(x, colour = palette_perso(), lwd = 3) {
     # size of each clusters
     temp_size <- 0
     for (i in 1:length(x)) {
@@ -1048,7 +1051,7 @@ plotRect <- function(x, colors, lwd = 3) {
             sum(x) - temp_size - x[i] + 0.5,
             x[i] + temp_size + 0.5,
             sum(x) - temp_size + 0.5,
-            border = colors[i],
+            border = colour[i],
             lwd = lwd
         )
         # memorize the size of the cluster (for a bottom-right shift)
@@ -1081,7 +1084,7 @@ getOrderedClusterSize <- function(x) {
 # c: CAH
 # cl: clusters from CAH
 #' @export
-heatMap <- function(x, dist, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbose = FALSE) {
+heatMap <- function(x, dist, s = NULL, c = NULL, cl = NULL, colour = palette_perso(), is_png = FALSE, verbose = FALSE) {
     plot.new()
     printProgress(verbose, "Heatmap calculation")
     text <- isTRUE(isTRUE(TEXT) & (nrow(x) < 100))
@@ -1090,12 +1093,12 @@ heatMap <- function(x, dist, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verb
         order <- attr(s, "iOrd")
         cl_sizes <- summary(s)$clus.size
         title <- "silhouette\'s scores"
-        colors <- colPers(length(levels(as.factor(s[, 1]))))
+        colors <- colPers(colour)(length(levels(as.factor(s[, 1]))))
     } else {
         order <- c$order
         cl_sizes <- getOrderedClusterSize(cl[order])
         title <- "dendrogram"
-        colors <- orderColors(c, cl)
+        colors <- orderColors(c, cl, colour = colour)
     }
 
     matrix <- as.matrix(dist)
@@ -1207,7 +1210,7 @@ heatMap <- function(x, dist, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verb
 # n_cluster: number of clusters
 # x: clustering object
 #' @export
-plotDendrogram <- function(x, cl, n_cluster = 2, max_cluster = 6) {
+plotDendrogram <- function(x, cl, n_cluster = 2, max_cluster = 6, colour = palette_perso()) {
     if (length(cl) > NB_ROW_MAX) {
         x$labels <- 1:length(cl)
         cex <- 0.4
@@ -1232,14 +1235,14 @@ plotDendrogram <- function(x, cl, n_cluster = 2, max_cluster = 6) {
     plotAxis(2, 0, max(x$height))
     abline(h = rev(x$height)[1:max_cluster], col = "gray", lty = 2, lwd = 1)
     # projection of the clusters
-    rect.hclust(x, k = as.numeric(n_cluster), border = orderColors(x, cl))
+    rect.hclust(x, k = as.numeric(n_cluster), border = orderColors(x, cl, colour))
     # suprLog = dev.off()
 }
 
 # Get colors ordered for dendrogram
 # x: clustering object
-orderColors <- function(x, cl) {
-    col_in <- colorClusters(cl)[x$order]
+orderColors <- function(x, cl, colour = palette_perso()) {
+    col_in <- colorClusters(cl, colour = colour)[x$order]
     j <- 1
     col_ordered <- rep(NA, length(table(cl)))
     col_ordered[1] <- col_in[1]
@@ -1259,7 +1262,7 @@ orderColors <- function(x, cl) {
 
 # nf: number of factorial axis
 #' @export
-plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png = FALSE) {
+plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, colour = palette_perso(), advanced = FALSE, is_png = FALSE) {
     k <- length(levels(as.factor(cl)))
 
     if (nrow(data) > NB_ROW_MAX) {
@@ -1300,7 +1303,7 @@ plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png 
         csub = 1.5,
         as.factor(cl),
         grid = FALSE,
-        col = colPers(k),
+        col = colPers(colour)(k),
         clabel = clabel,
         cstar = cstar,
         cellipse = cellipse,
@@ -1312,7 +1315,7 @@ plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png 
         x = x$li[, axis1],
         y = x$li[, axis2],
         labels = labels,
-        col = colorClusters(cl),
+        col = colorClusters(cl, colour = colour),
         cex = cex
     )
     # colnames(pca_coord) = c("Chemicals", "Axis 1", "Axis 2")

@@ -1,3 +1,4 @@
+# ---- DATA PREPARATION ----
 data("iris")
 df0 <- select(iris, -Species)
 df <- scale(df0)

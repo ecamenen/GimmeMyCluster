@@ -1,12 +1,13 @@
+# ---- DATA PREPARATION ----
 data("iris")
 df0 <- select(iris, -Species)
 df <- scale(df0)
 
-# Perform hierarchical clustering using Ward's method
+# Perform hierarchical clustering using Ward's method on Euclidean distance
 dist <- dist(df)
-clustering_ward <- getCAH(3, dist)  # Cut the dendrogram into 3 clusters
+clustering_ward <- getCAH(3, dist)
 
-# Get cluster partitions
+# Extract cluster partitions
 cls <- getClusterPerPart(c = clustering_ward)  # Default partition
 cl_full <- getClusterPerPart(c = clustering_ward, n = 150)  # Full partitioning (150 clusters)
 

@@ -25,112 +25,149 @@ max_cluster <- 6
 
 pretty_table <- function(x) {
   as_tibble(x) %>%
+    round(1) %>%
     mutate(`Nb. cluster` = 2:max_cluster) %>% 
     relocate(`Nb. cluster`)
 }
 
 pretty_table0 <- function(x, k) {
   as_tibble(x) %>%
+    round(1) %>%
     mutate(`Clusters` = 1:k) %>% 
     relocate(`Clusters`)
 }
 ```
 
-## Load the Data
-```{r data}
-data("metabolomic_fingerprint", envir = environment())
-head(metabolomic_fingerprint)
-df <- metabolomic_fingerprint %>%
-    column_to_rownames("Metabolites")
+## Classification of Iris species: a use-case 
+This guide provides a detailed step-by-step clustering based on the Iris dataset, which includes measurements for sepal length, sepal width, petal length, and petal width (in centimeters) for 50 flowers from three species: *Iris setosa*, *Iris versicolor*, and *Iris virginica*. These species are notoriously challenging to classify due to overlapping characteristics.
+```{r}
+data("iris")
 ```
 
-## Perform Clustering Analysis
-```{r analysis}
-# Optional: Scale the variance of each variables
+Species labels are excluded to perform an unsupervised clustering.
+```{r}
+df <- select(iris, -Species) %>%
+  set_rownames(seq(nrow(.))) %>%
+  rename_with(~ str_replace_all(., "\\.", " ") %>% str_to_sentence())
+head(as_tibble(df))
+```
+
+## Performing Clustering
+Normalization is recommanded to standardize variables, ensuring comparability and preventing variables with larger ranges or different units from dominating the clustering process. 
+```{r}
 df_scaled <- scale(df)
+```
 
-# Calculate pairwise distances (using an Euclidean distance)
-dist <- getDistance(df_scaled, 1)
+The distance between samples is then calculated (by default, with an Euclidean distance)...
+```{r}
+dist <- getDistance(df_scaled)
+as.matrix(dist) %>% as_tibble(dist)
+```
 
-# Generate clustering results for different numbers of clusters (using the Ward method)
-clustering <- getClassif(3, max_cluster, df_scaled, dist)
+...and used to perform the clustering (using Ward by default).
+```{r}
+clustering <- getClassif(d = dist)
+clustering
+```
 
-# Extract individual cluster assignments for each number of clusters
+Cluster assignments are generated for varying group counts (from 2 to 6 clusters by default).
+```{r}
 cls <- getClusterPerPart(max_cluster, clustering)
 ```
 
 ## Evaluate Clustering Quality
-```{r quality check}
-# Calculate silhouette scores and identify the optimal number of clusters
+The Silhouette index assesses clustering performance by measuring how well samples are assigned to clusters:
+  * +1 indicates a perfect fit within a cluster.  
+  * -1 signals misclassification.
+  
+For this dataset, two is the optimal number of clusters, based on the maximum average Silhouette score.
+```{r}
 sil <- getSilhouettePerPart(cls, dist) %>%
   getMeanSilhouettePerPart()
 plotSilhouettePerPart(sil)
 optimal_k <- which.max(sil) + 1
-
-# Retrieve the best clustering
+optimal_k
 cl <- cls[[optimal_k - 1]]
-
-# Visualize cluster membership using silhouette scores
-getSilhouette(cl, dist) %>% plotSilhouette()
-
-# Summarize model quality metrics: relative between-inertia and silhouette scores
-between <- getRelativeBetweenPerPart(max_cluster, df_scaled, cls)
-diff <- getBetweenDifferences(between)
-printSummary(between, diff, sil) %>% pretty_table()
+table(cl)
 ```
 
-## Visualize Clustering Results
-```{r plot}
-dev.off()
-plotDendrogram(optimal_k, clustering, max_cluster, cl)
+Further exploration reveals a slighly lower quality in the second cluster, especially with sample S42 being misclassified.
+```{r}
+sil_k <- getSilhouette(cl, dist)
+plotSilhouette(sil_k)
+sil_k[, 3]  %>% .[which.min(.)]
+```
 
-# Perform PCA and visualize clusters in reduced dimensions
-pca <- dudi.pca(df_scaled, scannf = FALSE, scale = FALSE, nf = 4)
-plotPca(pca, df_scaled, cl, advanced = TRUE)
+Clustering aims to maximize between-cluster inertia (separation) an minimize within-cluster inertia (compactness). The Elbow plot propose another way to determine the optimal number of cluster using the "elbow" point, where inertia gains converge, as a reference.
+```{r}
+between <- getRelativeBetweenPerPart(max_cluster, df_scaled, cls)
+plotElbow(between)
+```
 
-# Generate a heatmap of the dataset with the best clustering
+Quality checks could be summarized in a table.
+```{r}
+getBetweenDifferences(between) %>%
+  printSummary(between, ., sil) %>% 
+  pretty_table()
+```
+
+## Visualizing the Clusters
+Principal Component Analysis (PCA) reduces the dataset to two dimensions for easy visualization of cluster separation. For example, sample S42, which was flagged as misclassified by the Silhouette index, appears closer to the other irises group in the PCA plot.
+```{r}
+dudi.pca(df_scaled, scannf = FALSE, scale = FALSE, nf = 2) %>%
+  plotPca(df_scaled, cl, advanced = TRUE)
+```
+
+A heatmap provides an overview of variable values for each sample, highlighting patterns and group separation.
+```{r}
 heatMap(df_scaled, dist, c = clustering, cl = cl)
 ```
 
-# Explore Variable Contributions
-```{r ctr}
-# For all the clustering
-# Calculate the contribution of each variable to each clustering (in %)
-getPdisPerPartition(max_cluster, cls, df_scaled) %>% multiply_by(100) %>% pretty_table()
+
+A dendrogram visualizes hierarchical clustering by illustrating the fusion of samples at each step. Pruning the tree at the longest branches is a common way to determined the optimal number of cluster. Here, two clusters offer the best separation.
+```{r}
+plotDendrogram(optimal_k, clustering, max_cluster, cl)
+```
+
+The fusion level plot provide guide this process by directly calculating the differences in branch height.
+```{r}
+plotFusionLevels(max_cluster, clustering)
+```
+
+## Explore Variable Contributions
+
+The contribution of each variable increases as the number of clusters rises. By selecting two clusters, petal length is the most important variable, participating in 82% of its own contribution. For three clusters, sepal length gains importance.
+```{r}
+getPdisPerPartition(max_cluster, cls, df_scaled) %>% 
+  multiply_by(100) %>% 
+  pretty_table()
+```
 
 
-#  For the best clustering:
-# Display mean variable values per cluster
-getDistPerVariable0(df_scaled, cl) %>% pretty_table0(optimal_k)
-
-# Identify and plot the top contributing variables
+This information can be visualized in a histogram, here for our optimal clustering (with two clusters).
+```{r}
 getDiscriminantVariables(optimal_k, cl, df_scaled, 10) %>%
   plotDiscriminantVariables()
-
-# Calculate and format variable contributions (in %)
-getCtrVar(optimal_k, cl, df_scaled) %>% multiply_by(100) %>% pretty_table0(optimal_k)
 ```
 
-# Advanced Analysis
-```{r adv}
-# Visualize "fusion levels" (= differences in branch heights) between successive clustering steps
-plotFusionLevels(max_cluster, clustering)
 
-# Analyze the correlation between the data and the clustering distance matrix (= cophenetic distance)
-plotCohenetic(dist, clustering)
-
-# Compute within-cluster inertia for each clustering
-getRelativeWithinPerCluster(cls, df_scaled) %>% multiply_by(100) %>% pretty_table()
-
-# Plot the elbow curve to evaluate the decrease in within-cluster inertia
-plotElbow(between)
-
-# Perform gap statistics to assess clustering stability (= gap between a theoretical within-inertia distribution and the observations)
-gap_statistics <- getGapPerPart(max_cluster, df_scaled, clustering)
-plotGapPerPart(gap_statistics, max_cluster)
-plotGapPerPart2(gap_statistics, max_cluster)
-
-# Print a summary of quality metrics, including gap statistics
-printSummary(between, diff, sil, gap = gap_statistics) %>% pretty_table()
+Variable contributions can also be analyzed within each group of flowers. For instance, petal length (contributing 82.4% overall) accounts for 52% within the first cluster.
+```{r}
+getCtrVar(optimal_k, cl, df_scaled) %>% 
+  multiply_by(100) %>% 
+  pretty_table0(optimal_k)
 ```
 
+
+The mean values of each variable are used to describe each of the two groups. We can thus conclude that the irises of group number 1 seem to be characterized by smaller petals on average (0.25cm) than those of group number 2 (1.7cm).
+```{r}
+getDistPerVariable0(df, cl) %>% pretty_table0(optimal_k)
+```
+
+## Pespectives
+Two iris species groups were considered as the optimal number of clusters using the Silhouette index. Other quality metrics can offer additional interpretations on clustering performance. Advanced comparisons, including non-hierarchical methods (such as k-means), can further improve separation among the three Iris species.
+
+## Session information
+```{r end, echo = FALSE}
+sessionInfo()
+```

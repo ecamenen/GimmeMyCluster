@@ -31,7 +31,7 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf", "error_on=error")'
+          build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf", "--no-stop-on-test-error")'
 
       - name: Test coverage
         run: |

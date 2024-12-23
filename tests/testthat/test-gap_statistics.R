@@ -5,13 +5,13 @@ df <- scale(df0)
 
 # Perform hierarchical clustering using Ward's method on Euclidean distance
 dist <- dist(df)
-clustering_ward <- getCAH(3, dist)
+clustering_ward <- getCAH(dist)
 
 # Extract cluster partitions (up to 10 clusters)
-cls <- getClusterPerPart(c = clustering_ward, n = 10)
+cls <- getClusterPerPart(clustering_ward, max_cluster = 10)
 
-# Compute the gap statistic for cluster evaluation (B = 10 resamples)
-gap_res <- getGapPerPart(d = df0, c = clustering_ward, B = 10, n = 10)
+# Compute the gap statistic for cluster evaluation
+gap_res <- getGapPerPart(df0, c = clustering_ward, max_cluster = 10, n_bootstrap = 10)
 
 # ---- TEST GAP STATISTIC OUTPUT ----
 test_that("gapPerPart", {
@@ -34,9 +34,9 @@ test_that("gapBest", {
 # ---- TEST CLUSTER SUMMARY OUTPUT ----
 test_that("printSummary", {
   # Calculate clustering metrics
-  between <- getRelativeBetweenPerPart(d = df, cl = cls, n = 10)  # Between-cluster variance
+  between <- getRelativeBetweenPerPart(df, cl = cls, max_cluster = 10)  # Between-cluster variance
   diff <- getBetweenDifferences(between)  # Incremental variance differences
-  silhouette <- getSilhouettePerPart(cls, dist) %>%
+  silhouette <- getSilhouettePerPart(dist, cls) %>%
     getMeanSilhouettePerPart()  # Average silhouette width
 
   # Generate summary table of clustering performance

@@ -8,11 +8,11 @@ dist_euc <- dist(df)  # Euclidean distance
 dist_man <- dist(df, method = "manhattan")  # Manhattan distance
 
 # Perform hierarchical clustering using Ward's method with Euclidean distance
-clustering_ward <- getCAH(3, dist_euc)
+clustering_ward <- getCAH(dist_euc)
 
 # Extract clustering results for different partitions
-cls <- getClusterPerPart(c = clustering_ward)  # Default number of partitions
-cl_full <- getClusterPerPart(c = clustering_ward, n = 150)  # Full partition with 150 clusters
+cls <- getClusterPerPart(clustering_ward)  # Default number of partitions
+cl_full <- getClusterPerPart(clustering_ward, max_cluster = 150)  # Full partition with 150 clusters
 
 # ---- CLUSTERING TESTS ----
 test_that("clustering", {
@@ -23,10 +23,10 @@ test_that("clustering", {
   expect_identical(clustering_ward$method, "ward.D2")
 
   # Test Partitioning Around Medoids (PAM) with Euclidean distance
-  expect_s3_class(getCNH(d = dist_euc), "pam")
+  expect_s3_class(getCNH(dist = dist_euc), "pam")
 
   # Test k-means clustering
-  clustering <- getClassif(t = 2, df = df)
+  clustering <- getClassif(data = df, method = 2)
   expect_identical(clustering$method, "kmeans")
 
   # Ensure clustering results for 2 to 6 clusters are all k-means objects
@@ -54,17 +54,17 @@ test_that("cluster", {
   expect_identical(clustering_ward$dist.method, "euclidean")
 
   # Test clustering with Manhattan distance
-  clustering_man <- getCAH(3, dist_man)
+  clustering_man <- getCAH(dist_man)
   expect_identical(clustering_man$dist.method, "manhattan")
 
   # Test PAM clustering with Manhattan distance
-  getClassif(t = 1, d = dist_man) %>%
-    getClusterPerPart(c = .) %>%
+  getClassif(dist = dist_man, method = 1) %>%
+    getClusterPerPart() %>%
     test_clusters()
 
   # Test k-means clustering with standardized data
-  getClassif(t = 2, df = df) %>%
-    getClusterPerPart(c = .) %>%
+  getClassif(data = df, method = 2) %>%
+    getClusterPerPart() %>%
     test_clusters()
 })
 

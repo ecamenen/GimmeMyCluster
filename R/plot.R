@@ -68,22 +68,23 @@ plotHistogram <- function(p, df, title = "", color = "black") {
 }
 
 #' @export
-getDiscriminantVariables <- function(n, cl, d, m) {
-    if (m > ncol(d)) {
-        m <- ncol(d)
+# x: data
+getDiscriminantVariables <- function(x, cl, n_cluster = 2, n_var = 10) {
+    if (n_var > ncol(x)) {
+        n_var <- ncol(x)
     }
 
-    ctr <- 100 * getCtrVar(n, cl, d)
+    ctr <- 100 * getCtrVar(x, cl, n_cluster)
     max_ctr <- apply(ctr, 2, function(x) sum(x, na.rm = FALSE))
     # which_max_ctr= apply(ctr, 2, which.max)
     # color = as.character(which_max_ctr),
-    data.frame(discr_var = max_ctr[order(max_ctr, decreasing = TRUE)], order = length(max_ctr):1)[0:(m), ]
+    data.frame(discr_var = max_ctr[order(max_ctr, decreasing = TRUE)], order = length(max_ctr):1)[0:(n_var), ]
     # color2 = as.factor(which_max_ctr); levels(color2) = hue_pal()(length(max_ctr))
     # fill = color
 }
 
 #' @export
-plotDiscriminantVariables <- function(discr) {
-    p <- ggplot(discr, aes(order, discr[, 1]))
-    plotHistogram(p, discr, "Main discriminant variables")
+plotDiscriminantVariables <- function(x) {
+    p <- ggplot(x, aes(order, x[, 1]))
+    plotHistogram(p, x, "Main discriminant variables")
 }

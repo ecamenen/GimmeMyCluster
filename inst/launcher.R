@@ -308,31 +308,31 @@ data <- preProcessData(data, HEAD)
 
 # Perform classification
 printProgress(VERBOSE_NIV2, "Distance calculation")
-dis <- getDistance(data, opt$distance)
+dis <- getDistance(data, method = opt$distance)
 if (CLASSIF_TYPE < 3) {
     printProgress(VERBOSE_NIV2, "Classification")
 }
-classif <- getClassif(CLASSIF_TYPE, MAX_CLUSTERS, data, dis)
-list_clus <- getClusterPerPart(MAX_CLUSTERS + 1, classif)
+classif <- getClassif(data = data, dist = dis, method = CLASSIF_TYPE, max_cluster = MAX_CLUSTERS)
+list_clus <- getClusterPerPart(classif, max_cluster = MAX_CLUSTERS)
 optimal_nb_clusters <- 2
 clusters <- list_clus[[optimal_nb_clusters - 1]]
 
 NB_BIOMARK <- 20
 discr <- getDiscriminantVariables(
-    optimal_nb_clusters,
-    clusters,
     data,
-    NB_BIOMARK
+    clusters,
+    n_cluster = optimal_nb_clusters,
+    n_var = NB_BIOMARK
 )
 plotDiscriminantVariables(discr)
 
 discriminant_power <- getPdisPerPartition(
-    MAX_CLUSTERS,
+    data,
     list_clus,
-    data
+    MAX_CLUSTERS,
 ) * 100
 
 # Silhouette analysis
-sil <- getSilhouettePerPart(list_clus, dis)
+sil <- getSilhouettePerPart(dis, list_clus)
 mean_silhouette <- getMeanSilhouettePerPart(sil)
 plotSilhouettePerPart(mean_silhouette, VERBOSE)

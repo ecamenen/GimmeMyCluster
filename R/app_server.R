@@ -121,14 +121,14 @@ app_server <- function(input, output, session) {
         # Perform classification
         printProgress(vars$verbose2, "Classification")
 
-        vars$classif <- getClassif(vars$classif_type, vars$max_clusters, vars$data, vars$dis)
+        vars$classif <- getClassif(data = vars$data, dist = vars$dis, method = vars$classif_type, max_cluster = vars$max_clusters)
         if (vars$verbose2) {
             cat("done.\n")
         }
-        vars$clusters <- getClusterPerPart(vars$max_clusters, vars$classif)
+        vars$clusters <- getClusterPerPart(vars$classif, max_cluster = vars$max_clusters)
 
         # inertia
-        vars$between <- getRelativeBetweenPerPart(vars$max_clusters, vars$data, vars$clusters)
+        vars$between <- getRelativeBetweenPerPart(vars$data, vars$clusters, max_cluster = vars$max_clusters)
         vars$diff_between <- getBetweenDifferences(vars$between)
 
         printProgress(vars$verbose2, "PCA")
@@ -142,7 +142,7 @@ app_server <- function(input, output, session) {
             cat("done.\n")
         }
 
-        vars$sils <- getSilhouettePerPart(vars$clusters, vars$dis)
+        vars$sils <- getSilhouettePerPart(vars$dis, vars$clusters)
         vars$mean_sils <- getMeanSilhouettePerPart(vars$sils)
 
         setClusters()
@@ -184,7 +184,7 @@ app_server <- function(input, output, session) {
             message("\n[WARNING] A cluster with an only singleton biased the silhouette score.")
         }
 
-        writeClusters("clusters.tsv", vars$sil_k, vars$pca, v = FALSE)
+        writeClusters("clusters.tsv", vars$sil_k, vars$pca, verbose = FALSE)
     })
 
     setPrintFuncs <- function() {
@@ -207,10 +207,10 @@ app_server <- function(input, output, session) {
         vars$plotSil <- expr(plotSilhouette(vars$sil_k))
         vars$plotDend <- expr(
           plotDendrogram(
-                    vars$optimal_k,
                     vars$classif,
-                    vars$max_clusters,
-                    vars$cl_k
+                    vars$cl_k,
+                    vars$optimal_k,
+                    vars$max_clusters
                 )
         )
 
@@ -218,7 +218,7 @@ app_server <- function(input, output, session) {
             vars$plotHeatmap <- expr(
               heatMap(
                 vars$data,
-                vars$dis,
+                dist = vars$dis,
                 vars$sil_k,
                 is_png = vars$png,
                 verbose = vars$verbose2
@@ -228,7 +228,7 @@ app_server <- function(input, output, session) {
             vars$plotHeatmap <- expr(
               heatMap(
                 vars$data,
-                vars$dis,
+                dist = vars$dis,
                 c = vars$classif,
                 cl = vars$cl_k,
                 is_png = vars$png,
@@ -239,17 +239,17 @@ app_server <- function(input, output, session) {
 
         ##### advanced #####
         if (isTRUE(vars$advanced)) {
-            vars$plotFus <- expr(plotFusionLevels(vars$max_clusters, vars$classif))
+            vars$plotFus <- expr(plotFusionLevels(vars$classif, max_cluster = vars$max_clusters))
             vars$plotCoph <- expr({
                 printProgress(vars$verbose2, "Cophenetic calculation")
-                plotCohenetic(vars$dis, vars$classif, vars$png)
+                plotCohenetic(vars$classif, vars$dis, vars$png)
                 if (vars$verbose2) {
                     cat("done.\n")
                 }
             })
             vars$plotGap <- expr({
                   if (nrow(vars$data) < (NB_ROW_MAX / 2)) {
-                      plotGapPerPart(vars$gap, vars$max_clusters, verbose = FALSE)
+                      plotGapPerPart(vars$gap, max_cluster = vars$max_clusters, verbose = FALSE)
                       # plotGapPerPart2(gap, vars$max_clusters)
                   } else {
                       message("\n[WARNING] Dataset too big to calculate a gap statistics.")
@@ -258,14 +258,14 @@ app_server <- function(input, output, session) {
             )
             vars$plotGap2 <- expr({
                   if (nrow(vars$data) < (NB_ROW_MAX / 2)) {
-                      plotGapPerPart2(vars$gap, vars$max_clusters)
+                      plotGapPerPart2(vars$gap, max_cluster = vars$max_clusters)
                   } else {
                       message("\n[WARNING] Dataset too big to calculate a gap statistics.")
                   }
               }
             )
             vars$plotElb <- expr(plotElbow(vars$between))
-            vars$within_k <- expr(getRelativeWithinPerCluster(vars$clusters, vars$data))
+            vars$within_k <- expr(getRelativeWithinPerCluster(vars$data, cl = vars$clusters))
         }
 
         ##### print table func #####
@@ -279,25 +279,25 @@ app_server <- function(input, output, session) {
             )
         )
         vars$ctr_part <- expr(
-          100 * 
+          100 *
             getPdisPerPartition(
-              vars$max_clusters,
+              vars$data,
               vars$clusters,
-              vars$data
+              vars$max_clusters
               )
         )
         vars$centroids <- expr(getDistPerVariable(vars$data, vars$cl_k))
         vars$disc <- expr(
           getDiscriminantVariables(
-                vars$optimal_k,
-                vars$cl_k,
                 vars$data,
+                vars$cl_k,
+                vars$optimal_k,
                 input$max_biomark
             )
         )
         vars$ctr_clus_plot <- expr(plotDiscriminantVariables(eval(vars$disc)))
-        vars$ctr_clus <- expr(100 * getCtrVar(vars$optimal_k, vars$cl_k, vars$data))
-        writeTsv(eval(vars$disc), "discr_var.tsv", v = FALSE)
+        vars$ctr_clus <- expr(100 * getCtrVar(vars$data, vars$cl_k, n_cluster = vars$optimal_k))
+        writeTsv(eval(vars$disc), "discr_var.tsv", verbose = FALSE)
     }
 
     # post-process for data
@@ -375,7 +375,7 @@ app_server <- function(input, output, session) {
 
     setDistance <- reactive({
         printProgress(vars$verbose2, "Distance calculation")
-        refresh$dis <- getDistance(refresh$data, as.integer(input$dist_type))
+        refresh$dis <- getDistance(refresh$data, method = as.integer(input$dist_type))
         if (vars$verbose2) {
             cat("done.\n")
         }
@@ -446,7 +446,7 @@ app_server <- function(input, output, session) {
                 if (nrow(vars$data) < (NB_ROW_MAX / 2)) {
                     printProgress(vars$verbose2, "Gap statistics calculation")
 
-                    vars$gap <- getGapPerPart(vars$max_clusters, vars$data, vars$classif, NB_BOOTSTRAP)
+                    vars$gap <- getGapPerPart(vars$data, vars$classif, max_cluster = vars$max_clusters, n_bootstrap = NB_BOOTSTRAP)
                     if (vars$verbose2) {
                         cat("done.\n")
                     }
@@ -510,7 +510,7 @@ app_server <- function(input, output, session) {
         if (is.data.frame(vars$data)) {
             setVariables()
             setPrintFuncs()
-            writeTsv(summary_table, "summary.tsv", v = FALSE)
+            writeTsv(summary_table, "summary.tsv", verbose = FALSE)
 
             savePlot("best_clustering", eval(vars$plotBest))
             savePlot("silhouette", eval(vars$plotSil))
@@ -530,9 +530,9 @@ app_server <- function(input, output, session) {
                 # if (nrow(vars$data) < (NB_ROW_MAX/2)){
                 savePlot("gap", eval(vars$plotGap))
                 # }
-                writeTsv(eval(vars$ctr_clus), "ctr_clus.tsv", v = FALSE)
-                writeTsv(eval(vars$ctr_part), "ctr_part.tsv", v = FALSE)
-                writeTsv(eval(vars$within_k), "within_k.tsv", v = FALSE)
+                writeTsv(eval(vars$ctr_clus), "ctr_clus.tsv", verbose = FALSE)
+                writeTsv(eval(vars$ctr_part), "ctr_part.tsv", verbose = FALSE)
+                writeTsv(eval(vars$within_k), "within_k.tsv", verbose = FALSE)
             }
         }
     })
@@ -549,7 +549,7 @@ app_server <- function(input, output, session) {
                 if (checkMaxCluster()) {
                     observeEvent(
                         input$summary_save,
-                        writeTsv("summary_table", "summary.tsv", v = FALSE)
+                        writeTsv("summary_table", "summary.tsv", verbose = FALSE)
                     )
                   eval(vars$summary_table)
                 }
@@ -748,7 +748,7 @@ app_server <- function(input, output, session) {
                         if (checkMaxCluster()) {
                             observeEvent(
                                 input$within_save,
-                                writeTsv("within_k", "within_k.tsv", v = FALSE)
+                                writeTsv("within_k", "within_k.tsv", verbose = FALSE)
                             )
                           eval(vars$within_k)
                         }
@@ -792,7 +792,7 @@ app_server <- function(input, output, session) {
                 if (checkMaxCluster()) {
                     observeEvent(
                         input$ctr_clus_save,
-                        writeTsv("ctr_clus", "ctr_clus.tsv", v = FALSE)
+                        writeTsv("ctr_clus", "ctr_clus.tsv", verbose = FALSE)
                     )
                   eval(vars$ctr_clus)
                 }
@@ -809,7 +809,7 @@ app_server <- function(input, output, session) {
                 if (checkMaxCluster()) {
                     observeEvent(
                         input$ctr_part_save,
-                        writeTsv("ctr_part", "ctr_part.tsv", v = FALSE)
+                        writeTsv("ctr_part", "ctr_part.tsv", verbose = FALSE)
                     )
                   eval(vars$ctr_part)
                 }
@@ -826,7 +826,7 @@ app_server <- function(input, output, session) {
                 if (checkMaxCluster()) {
                     observeEvent(
                         input$centroids_save,
-                        writeTsv("centroids_save", "centroids.tsv", v = FALSE)
+                        writeTsv("centroids_save", "centroids.tsv", verbose = FALSE)
                     )
                     aggregate(vars$data, list(vars$cl_k), mean)
                 }

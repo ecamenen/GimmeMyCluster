@@ -5,16 +5,16 @@ df <- scale(df0)
 
 # Perform hierarchical clustering using Ward's method on Euclidean distance
 dist <- dist(df)
-clustering_ward <- getCAH(3, dist)
+clustering_ward <- getCAH(dist)
 
 # Extract cluster partitions
-cls <- getClusterPerPart(c = clustering_ward)  # Default partition
-cl_full <- getClusterPerPart(c = clustering_ward, n = 150)  # Full partitioning (150 clusters)
+cls <- getClusterPerPart(clustering_ward)  # Default partition
+cl_full <- getClusterPerPart(clustering_ward, max_cluster = 150)  # Full partitioning (150 clusters)
 
 # Calculate silhouette metrics for partitions
-silhouette_k <- getSilhouette(cls[[1]], dist)  # Silhouette for the first partition
-silhouette_148 <- getSilhouette(cl_full[[148]], dist)  # Silhouette for 148 clusters
-silhouettes <- getSilhouettePerPart(cl_full[-149], dist)  # Silhouette for all but the last partition
+silhouette_k <- getSilhouette(dist, cls[[1]])  # Silhouette for the first partition
+silhouette_148 <- getSilhouette(dist, cl_full[[148]])  # Silhouette for 148 clusters
+silhouettes <- getSilhouettePerPart(dist, cl_full[-149])  # Silhouette for all but the last partition
 
 # ---- SILHOUETTE TEST FUNCTION ----
 test_silhouette <- function(x) {

@@ -66,13 +66,13 @@ as.matrix(dist) %>% as_tibble(dist)
 
 ...and used to perform the clustering (using Ward by default).
 ```{r}
-clustering <- getClassif(d = dist)
+clustering <- getClassif(dist = dist)
 clustering
 ```
 
 Cluster assignments are generated for varying group counts (from 2 to 6 clusters by default).
 ```{r}
-cls <- getClusterPerPart(max_cluster, clustering)
+cls <- getClusterPerPart(clustering)
 ```
 
 ## Evaluate Clustering Quality
@@ -82,7 +82,7 @@ The Silhouette index assesses clustering performance by measuring how well sampl
   
 For this dataset, two is the optimal number of clusters, based on the maximum average Silhouette score.
 ```{r}
-sil <- getSilhouettePerPart(cls, dist) %>%
+sil <- getSilhouettePerPart(dist, cls) %>%
   getMeanSilhouettePerPart()
 plotSilhouettePerPart(sil)
 optimal_k <- which.max(sil) + 1
@@ -93,14 +93,14 @@ table(cl)
 
 Further exploration reveals a slighly lower quality in the second cluster, especially with sample S42 being misclassified.
 ```{r}
-sil_k <- getSilhouette(cl, dist)
+sil_k <- getSilhouette(dist, cl)
 plotSilhouette(sil_k)
 sil_k[, 3]  %>% .[which.min(.)]
 ```
 
 Clustering aims to maximize between-cluster inertia (separation) an minimize within-cluster inertia (compactness). The Elbow plot propose another way to determine the optimal number of cluster using the "elbow" point, where inertia gains converge, as a reference.
 ```{r}
-between <- getRelativeBetweenPerPart(max_cluster, df_scaled, cls)
+between <- getRelativeBetweenPerPart(df_scaled, cls)
 plotElbow(between)
 ```
 
@@ -120,25 +120,25 @@ dudi.pca(df_scaled, scannf = FALSE, scale = FALSE, nf = 2) %>%
 
 A heatmap provides an overview of variable values for each sample, highlighting patterns and group separation.
 ```{r}
-heatMap(df_scaled, dist, c = clustering, cl = cl)
+heatMap(df_scaled, dist = dist, c = clustering, cl = cl)
 ```
 
 
 A dendrogram visualizes hierarchical clustering by illustrating the fusion of samples at each step. Pruning the tree at the longest branches is a common way to determined the optimal number of cluster. Here, two clusters offer the best separation.
 ```{r}
-plotDendrogram(optimal_k, clustering, max_cluster, cl)
+plotDendrogram(clustering, cl)
 ```
 
 The fusion level plot provide guide this process by directly calculating the differences in branch height.
 ```{r}
-plotFusionLevels(max_cluster, clustering)
+plotFusionLevels(clustering)
 ```
 
 ## Explore Variable Contributions
 
 The contribution of each variable increases as the number of clusters rises. By selecting two clusters, petal length is the most important variable, participating in 82% of its own contribution. For three clusters, sepal length gains importance.
 ```{r}
-getPdisPerPartition(max_cluster, cls, df_scaled) %>% 
+getPdisPerPartition(df_scaled, cls) %>% 
   multiply_by(100) %>% 
   pretty_table()
 ```
@@ -146,14 +146,14 @@ getPdisPerPartition(max_cluster, cls, df_scaled) %>%
 
 This information can be visualized in a histogram, here for our optimal clustering (with two clusters).
 ```{r}
-getDiscriminantVariables(optimal_k, cl, df_scaled, 10) %>%
+getDiscriminantVariables(df_scaled, cl) %>%
   plotDiscriminantVariables()
 ```
 
 
 Variable contributions can also be analyzed within each group of flowers. For instance, petal length (contributing 82.4% overall) accounts for 52% within the first cluster.
 ```{r}
-getCtrVar(optimal_k, cl, df_scaled) %>% 
+getCtrVar(df_scaled, cl) %>% 
   multiply_by(100) %>% 
   pretty_table0(optimal_k)
 ```

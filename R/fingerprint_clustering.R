@@ -3,35 +3,13 @@
 #            MAIN
 ################################
 
-# Pseudo-random settings:
-# milisec * PID
-# set.seed(as.numeric(format(Sys.time(), "%OS2")) * 100 * Sys.getpid())
-
 # Global variables settings
 TEXT <- TRUE # print values on graph (for optimum partition and heatmap)
 NB_ROW_MAX <- 200 # max row to have pdf, otherwise, some plots are in png
 MAX_CHAR_LEN <- 25 # maximum length of individual s names
 
-# Loading data
-# dec=".")
-# if (isTRUE(VERBOSE_NIV2)) start_time = Sys.time()
-
-
-# decomment to have the mean of the variables for each clusters
-# getClusterCentroids(data, clusters)
-# decomment to have the mean of every variables (only if each column is a different condition of the same variable)
-# apply(getClusterCentroids(data, clusters), 1, mean)
-# if (nrow(data) > 100){
-#   cat("\nCLUSTER SIZES:")
-#   # t<- do not print "clusters"
-#   table(t <- clusters)
-# }
-
-# if (!isTRUE(VERBOSE)) cat(paste("Optimal number of clusters:", optimal_nb_clusters,"\n"))
-# if (isTRUE(VERBOSE_NIV2)) getTimeElapsed(start_time)
-
-printProgress <- function(v = TRUE, val) {
-    if (isTRUE(v)) {
+printProgress <- function(verbose = TRUE, val) {
+    if (isTRUE(verbose)) {
         cat(paste("\n[", format(Sys.time(), "%X"), "] ", val, "in progress..."), sep = "")
     }
 }
@@ -144,7 +122,7 @@ discardRowCondDoublets <- function(x) {
         removed_conds <- x[unlist(row_doublets), 1]
         removed <- cbind(removed_reacs, removed_conds)
         colnames(removed) <- c("condition", "")
-        writeTsv(removed, v = FALSE)
+        writeTsv(removed, verbose = FALSE)
     }
 
     if (length(row_doublets) > 0) {
@@ -193,7 +171,7 @@ discardRowCondDoublets <- function(x) {
         removed_conds <- x[unlist(row_doublets), 1]
         removed <- cbind(removed_reacs, removed_conds)
         colnames(removed) <- c("condition", "")
-        writeTsv(removed, v = FALSE)
+        writeTsv(removed, verbose = FALSE)
     }
     if (length(row_doublets) > 0) {
         return(x[-unlist(row_doublets), ])
@@ -205,9 +183,9 @@ discardRowCondDoublets <- function(x) {
 # Inputs: x : a matrix
 # filename of the saved file
 # Prints the matrix, save the matrix
-writeTsv <- function(x, f = NULL, cl = FALSE, v = TRUE) {
+writeTsv <- function(x, f = NULL, cl = FALSE, verbose = TRUE) {
     # print on stdout
-    if (isTRUE(v)) {
+    if (isTRUE(verbose)) {
         cat(paste("\n", gsub("_", " ", toupper(x)), ":\n", sep = ""))
     }
     # disabling warning
@@ -226,7 +204,7 @@ writeTsv <- function(x, f = NULL, cl = FALSE, v = TRUE) {
     output[is.na(output)] <- ""
     colnames(output) <- rep("", ncol(output))
     rownames(output) <- rep("", nrow(output))
-    if (isTRUE(v)) {
+    if (isTRUE(verbose)) {
         if (!isTRUE(cl)) {
             printed <- round(apply(output[-1, -1], 2, as.numeric), 2)
             rownames(printed) <- rownames(tab)
@@ -287,15 +265,15 @@ plotBestClustering <- function(
     sub_title,
     values,
     values_type,
-    optimal_nb_clusters = 2,
-    n = 6,
+    n_cluster = 2,
+    max_cluster = 6,
     interval = 1,
     min_x = 2,
     best = NULL,
     val2 = NULL,
     verbose = FALSE) {
 
-    plotAxis(1, 2, n)
+    plotAxis(1, 2, max_cluster)
 
     if (interval >= 1) {
         axisSeq <- round(values)
@@ -305,10 +283,10 @@ plotBestClustering <- function(
 
     # case of plotting gap statistics
     if (min_x < 2) {
-        best_y <- values[optimal_nb_clusters]
+        best_y <- values[n_cluster]
     } # case of fusion levels
     else if (!is.null(val2)) {
-        best_y <- values[optimal_nb_clusters - 1]
+        best_y <- values[n_cluster - 1]
     } else {
         best_y <- max(values)
     }
@@ -333,13 +311,13 @@ plotBestClustering <- function(
         line = 0.5
     )
     abline(
-        v = optimal_nb_clusters,
+        v = n_cluster,
         col = "red",
         lty = 2,
         lwd = 2
     )
     points(
-        optimal_nb_clusters,
+        n_cluster,
         best_y,
         pch = 19,
         col = "red",
@@ -355,7 +333,7 @@ plotBestClustering <- function(
     if (isTRUE(TEXT)) {
         text(
             y = values,
-            x = min_x:n,
+            x = min_x:max_cluster,
             labels = round(t_values, 2),
             cex = 1.2,
             pos = 4,
@@ -365,7 +343,7 @@ plotBestClustering <- function(
     if (isTRUE(verbose)) {
         cat(
             "Optimal number of clusters k = ",
-            optimal_nb_clusters,
+            n_cluster,
             "\n",
             "With a",
             values_type,
@@ -391,39 +369,40 @@ savePdf <- function(f) {
 # Outputs:
 # for each column, the mean=0 and the variance is the same
 #' @export
-scalecenter <- function(d) {
+scalecenter <- function(x) {
     # output scale function: for each column, mean=0, sd=1
-    return(scale(d) * sqrt(nrow(d) / (nrow(d) - 1)))
+    return(scale(x) * sqrt(nrow(x) / (nrow(x) - 1)))
     # ponderation for sampling index (var use n-1)
     # without this constante, for advanced outputs, total (max_cluster=nrow(data)) will be different from 1
 }
 
-# df: dataframe
-# d: distance type
+# data: dataframe
+# method: distance method
 #' @export
-getDistance <- function(df, d = 1) {
+getDistance <- function(x, method = 1) {
     dists <- c("euclidean", "manhattan", 1, 2, 5, 7)
 
-    if (d < 3) {
-        dist(df, method = dists[d])
+    if (method < 3) {
+        dist(x, method = dists[method])
     } else {
-        dist.binary(df, method = as.integer(dists[d]))
+        dist.binary(x, method = as.integer(dists[method]))
     }
 }
 
-# d distance object
-checkEuclidean <- function(d) {
-    if (attributes(d)$method != "euclidean") {
+# x distance object
+checkEuclidean <- function(x) {
+    if (attributes(x)$method != "euclidean") {
         stop("Distance should be euclidean with this classification method.", call. = FALSE)
     }
 }
 
-isSymmetric <- function(d) {
-    if (nrow(d) == ncol(d)) {
-        isReflexivity <- unique(d[cbind(1:nrow(d), 1:nrow(d))] == 0)
+# x distance object
+isSymmetric <- function(x) {
+    if (nrow(x) == ncol(x)) {
+        isReflexivity <- unique(x[cbind(1:nrow(x), 1:nrow(x))] == 0)
 
         if (length(isReflexivity) == 1 & isTRUE(isReflexivity)) {
-            isCommutativity <- unique(d[lower.tri(d)] == t(d)[lower.tri(d)])
+            isCommutativity <- unique(x[lower.tri(x)] == t(x)[lower.tri(x)])
 
             if (length(isCommutativity) == 1 & isTRUE(isCommutativity)) {
                 return(TRUE)
@@ -438,32 +417,32 @@ isSymmetric <- function(d) {
 ################################
 
 # Inputs:
-# t: number of type of classification
-# df: data
-# d: distance matrix
+# method: number of method of classification
+# data: data
+# x: distance matrix
 # Ouput: Hierarchical classification
-getCAH <- function(t = 3, d) {
-    if (t > 2) {
-        if (t == 8 | t == 9) {
-            checkEuclidean(d)
+getCAH <- function(x, method = 3) {
+    if (method > 2) {
+        if (method == 8 | method == 9) {
+            checkEuclidean(x)
         }
 
         # cah: classification hierarchic ascending
-        cah <- hclust(d, method = getClassifType(t))
+        cah <- hclust(x, method = getClassifType(method))
         # automaticly ordering by clusters
-        return(reorder.hclust(cah, d))
+        return(reorder.hclust(cah, x))
     }
 }
 
 # Selects best algo based on cophenetic calculation
-# df: data
+# x: data
 # d: distance matrix
-selectBestCAH <- function(df, d, v = FALSE) {
+selectBestCAH <- function(x, dist, verbose = FALSE) {
     temp <- 0
     for (i in 3:9) {
-        cah <- getCAH(i)
-        res <- cor(d, cophenetic(cah))
-        if (isTRUE(v)) {
+        cah <- getCAH(x, method = i)
+        res <- cor(dist, cophenetic(cah))
+        if (isTRUE(verbose)) {
             cat(paste(getClassifType(i), ":", round(res, 3), "\n"))
         }
         if (res > temp) {
@@ -476,8 +455,8 @@ selectBestCAH <- function(df, d, v = FALSE) {
 }
 
 # Inputs:
-# t: number of type of classification
-getClassifType <- function(t) {
+# x: number of method of classification
+getClassifType <- function(x) {
     methods <- c(
         "kmedoids",
         "kmeans",
@@ -489,91 +468,91 @@ getClassifType <- function(t) {
         "median",
         "centroid"
     )
-    methods[t]
+    methods[x]
 }
 
-# Agglomerative coefficient ()
-getCoefAggl <- function(c) {
-    coef.hclust(c)
+# Agglomerative coefficient
+# x: clustering object
+getCoefAggl <- function(x) {
+    coef.hclust(x)
 }
 
 # Inputs:
-# t: number of type of classification
-# df: data
-# d: distance for pam
-# k: number of clusterting
+# method: number of method of classification
+# data: data
+# dist: distance
+# n_cluster: number of clustering
 # Ouput: Non-hierarchical classification
-getCNH <- function(t = 1, df = NULL, d = NULL, k = 2, centers = NULL, nrun = 100) {
-    if (t == 1) {
+getCNH <- function(data = NULL, dist = NULL, n_cluster = 2, method = 1, centers = NULL, nrun = 100) {
+    if (method == 1) {
         if (!is.null(centers)) {
-            return(pam(d, k, diss = TRUE, medoids = centers))
+            return(pam(dist, n_cluster, diss = TRUE, medoids = centers))
         }
-        return(pam(d, k, diss = TRUE))
-    } else if (t == 2) {
+        return(pam(dist, n_cluster, diss = TRUE))
+    } else if (method == 2) {
         if (!is.null(centers)) {
-            k <- centers
+            n_cluster <- centers
         }
-        return(kmeans(df, centers = k, nstart = nrun))
+        return(kmeans(data, centers = n_cluster, nstart = nrun))
     }
 }
 
 #' @export
-getClassif <- function(t = 3, n = 6, df = NULL, d = NULL, centers = NULL, nrun = 100) {
-    if (t > 2) {
-        getCAH(t, d)
+getClassif <- function(data = NULL, dist = NULL, method = 3, max_cluster = 6, centers = NULL, nrun = 100) {
+    if (method > 2) {
+        getCAH(dist, method = method)
     } else {
-        list_cnh <- list("method" = getClassifType(t))
-        for (k in 2:(n + 1)) {
-            list_cnh[[k]] <- getCNH(t, df, d, k, centers = centers[[k - 1]], nrun = nrun)
+        list_cnh <- list("method" = getClassifType(method))
+        for (k in 2:(max_cluster + 1)) {
+            list_cnh[[k]] <- getCNH(data = data, dist = dist, method = method, n_cluster = k, centers = centers[[k - 1]], nrun = nrun)
         }
         return(list_cnh)
     }
 }
 
 # Inputs:
-# t: number of type of classification
-# k: number of clusters
-# c: hierarchical classification
+# n_cluster: number of clusters
+# x: hierarchical classification
 # d: data
-# Output: partitionning contening k clusters
+# Output: partitionning contening n_cluster clusters
 #' @export
-getClusters <- function(k = 2, c) {
-    if (c$method == "kmedoids") {
-        c[[k]]$clustering
-    } else if (c$method == "kmeans") {
-        c[[k]]$cluster
+getClusters <- function(x, n_cluster = 2) {
+    if (x$method == "kmedoids") {
+        x[[n_cluster]]$clustering
+    } else if (x$method == "kmeans") {
+        x[[n_cluster]]$cluster
     } else {
-        cutree(c, k)
+        cutree(x, n_cluster)
     }
 }
 
 #' @export
-getClusterPerPart <- function(n = 6, c) {
+getClusterPerPart <- function(x, max_cluster = 6) {
     cl <- list()
-    for (k in 2:n) {
-        cl[[k - 1]] <- getClusters(k, c)
+    for (k in 2:max_cluster) {
+        cl[[k - 1]] <- getClusters(x, n_cluster = k)
     }
     return(cl)
 }
 
 # Input:
-# cl: clusters
-colorClusters <- function(cl) {
-    NB_CLUSTERS <- length(levels(as.factor(cl)))
+# x: clusters
+colorClusters <- function(x) {
+    NB_CLUSTERS <- length(levels(as.factor(x)))
     for (i in 1:NB_CLUSTERS) {
-        cl[cl == i] <- colPers(NB_CLUSTERS)[i]
+        x[x == i] <- colPers(NB_CLUSTERS)[i]
     }
-    return(cl)
+    return(x)
 }
 
 # Inputs:
 # cl: clusters
 # f : filename
 # r: ordered alphabetically
-writeClusters <- function(f, sil_k, pca, v = FALSE) {
+writeClusters <- function(f, sil_k, pca, verbose = FALSE) {
     cluster <- cbind(sil_k[, 1], sil_k[, 3], pca$li[attr(sil_k, "iOrd"), c(1, 2)])
     colnames(cluster) <- c("Cluster", "Silhouette", "Axis1", "Axis2")
-    writeTsv(cluster, f, cl = FALSE, v = v)
+    writeTsv(cluster, f, cl = FALSE, verbose = verbose)
 }
 
 ############################################################
@@ -582,12 +561,12 @@ writeClusters <- function(f, sil_k, pca, v = FALSE) {
 
 # Distance matrix between each leaf of the dendogramm
 # Inputs:
-# d : distance matrix
-# cah : hierarchical classification
+# dist : Distance matrix
+# x : hierarchical classification
 #' @export
-plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
-    coph_matrix <- cophenetic(cah)
-    cor_coph <- cor(d, coph_matrix)
+plotCohenetic <- function(x, dist, is_png = FALSE, verbose = FALSE) {
+    coph_matrix <- cophenetic(x)
+    cor_coph <- cor(dist, coph_matrix)
     if (isTRUE(verbose)) {
         cat(
             paste(
@@ -614,12 +593,12 @@ plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
     # }
 
     plot(
-        d,
+        dist,
         coph_matrix,
         pch = 19,
         col = alpha("red", 0.2),
         axes = FALSE,
-        xlim = c(0, max(d)),
+        xlim = c(0, max(dist)),
         xlab = "",
         ylab = "",
         ylim = c(0, max(coph_matrix)),
@@ -632,7 +611,7 @@ plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
         line = line.lab
     )
     plotAxis(2, 0, max(coph_matrix), lwd = lwd)
-    plotAxis(1, 0, max(d), lwd = lwd)
+    plotAxis(1, 0, max(dist), lwd = lwd)
     abline(0, 1, col = "grey", lty = 2, lwd = lwd)
     # suprLog = dev.off()
 }
@@ -643,61 +622,65 @@ plotCohenetic <- function(d, cah, is_png = FALSE, verbose = FALSE) {
 
 # Relative inter-group inertia for each partitionning
 # Inputs:
-# n: maximum number of clusters
-# d: dataframe
+# max_cluster: maximum number of clusters
+# x: dataframe
 # cl: list of clusters per partition
 #' @export
-getRelativeBetweenPerPart <- function(n = 6, d, cl) {
-    d <- as.matrix(d)
-    between <- rep(0, n - 1)
+getRelativeBetweenPerPart <- function(x, cl, max_cluster = 6) {
+    x <- as.matrix(x)
+    between <- rep(0, max_cluster - 1)
     # total sum of square
-    TSS <- sum(scale(d, scale = FALSE)^2)
-    for (i in 2:n) {
+    TSS <- sum(scale(x, scale = FALSE)^2)
+    for (i in 2:max_cluster) {
         cl_k <- as.factor(cl[[i - 1]])
-        # apply(d, 2, mean) : centroids for each column
+        # apply(x, 2, mean) : centroids for each column
         # as.vector(table(cl) : size of each clusters
         # t : vector rotation for arithmetic with other row or column vectors
-        between[i - 1] <- sum(t((t(getClusterCentroids(d, cl_k)) - apply(d, 2, mean))^2) * as.vector(table(cl_k))) / TSS
+        between[i - 1] <- sum(t((t(getClusterCentroids(x, cl_k)) - apply(x, 2, mean))^2) * as.vector(table(cl_k))) / TSS
     }
     return(100 * between)
 }
 
+# x: raw dataset
+# cl: list of clusters per partition
 # tapply(data[,i], Cla, mean) :
 # centroids of each clusters for a column i
 # sapply(1:ncol(data), function(i) tapply(data[,i], Cla, mean)) :
 # centroids of each clusters for each column
-getClusterCentroids <- function(d, cl) {
-    sapply(1:ncol(d), function(i) tapply(d[, i], cl, mean))
+getClusterCentroids <- function(x, cl) {
+    sapply(1:ncol(x), function(i) tapply(x[, i], cl, mean))
 }
 
 # Difference between each case of a vector
+# x: between-inertia vector of integer
 #' @export
-getBetweenDifferences <- function(between) {
+getBetweenDifferences <- function(x) {
     # apply produce a list, unlist convert in vector
-    diff <- unlist(sapply(1:length(between), function(i) between[i] - between[i - 1]))
-    return(as.vector(cbind(between[1], t(diff))))
+    diff <- unlist(sapply(1:length(x), function(i) x[i] - x[i - 1]))
+    return(as.vector(cbind(x[1], t(diff))))
     #-n-1 to remove the last NA value (pairwise comparison)
-    # between[1] to get the difference with 1 cluster
+    # x[1] to get the difference with 1 cluster
 }
 
-# TODO: replace k by i: the cluster ID
-getWithin <- function(d, cl, k = 2) {
-    nk <- length(cl[cl == k]) # number of individuals in the cluster
-    d1 <- scalecenter(d)
-    return(nk * sum(getClusterCentroids(d1, cl)[k, ]^2) / nrow(d))
+# x: data
+# i_cluster: cluster id
+getWithin <- function(x, cl, i_cluster = 2) {
+    cluster_size <- length(cl[cl == i_cluster]) # number of individuals in the cluster
+    scaled <- scalecenter(x)
+    return(cluster_size * sum(getClusterCentroids(scaled, cl = cl)[i_cluster, ]^2) / nrow(x))
 }
 
 # cl: list of clusters per partition
 #' @export
-getRelativeWithinPerCluster <- function(cls, d) {
-    n <- length(cls)
-    within <- matrix(NA, n, n + 1)
-    rownames(within) <- seq(2, n + 1)
-    colnames(within) <- paste("G", seq(1, n + 1), sep = "")
-    for (k in 2:(n + 1)) {
-        cl <- cls[[k - 1]]
-        for (i in 1:length(table(cl))) {
-            within[k - 1, i] <- getWithin(d, cl, i)
+getRelativeWithinPerCluster <- function(x, cl) {
+    max_cluster <- length(cl)
+    within <- matrix(NA, max_cluster, max_cluster + 1)
+    rownames(within) <- seq(2, max_cluster + 1)
+    colnames(within) <- paste("G", seq(1, max_cluster + 1), sep = "")
+    for (k in 2:(max_cluster + 1)) {
+        cl_k <- cl[[k - 1]]
+        for (i in 1:length(table(cl_k))) {
+            within[k - 1, i] <- getWithin(x, cl = cl_k, i_cluster = i)
         }
         within[k - 1, ] <- within[k - 1, ] / sum(as.numeric(na.omit(within[k - 1, ])))
     }
@@ -705,20 +688,21 @@ getRelativeWithinPerCluster <- function(cls, d) {
 }
 
 # Between inertia differences between a partionning and the previous
-plotBetweenDiff <- function(between_diff, verbose = FALSE) {
+# x: numerical vector of between differences
+plotBetweenDiff <- function(x, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nBETWEEN DIFFERENCES:\n")
     }
-    optimal_nb_clusters <- which.max(between_diff) + 1
-    n <- length(between_diff)
+    n_cluster <- which.max(x) + 1
+    max_cluster <- length(x)
     # savePdf("between_differences.pdf")
     setGraphic()
     plot(
-        2:(n + 1),
-        between_diff,
+        2:(max_cluster + 1),
+        x,
         type = "b",
-        ylim = c(round(min(between_diff)) - 1, round(max(between_diff)) + 1),
-        xlim = c(2, (n + 2)),
+        ylim = c(round(min(x)) - 1, round(max(x)) + 1),
+        xlim = c(2, (max_cluster + 2)),
         xlab = "Nb. of clusters",
         ylab = "Between-cluster variation (%)",
         col = "grey",
@@ -726,32 +710,33 @@ plotBetweenDiff <- function(between_diff, verbose = FALSE) {
     )
     plotBestClustering(
         "Largest between differences method",
-        between_diff,
+        x,
         " variation with the previous partitionning (%)",
-        optimal_nb_clusters,
+        n_cluster,
         verbose = verbose,
-        n = n
+        max_cluster = max_cluster
     )
     # suprLog = dev.off()
 }
 
+# x: clustering object
 #' @export
-plotFusionLevels <- function(n = 6, c, verbose = FALSE) {
+plotFusionLevels <- function(x, max_cluster = 6, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nFUSION LEVELS:\n")
     }
-    fusion <- rev(c$height)
-    diff <- unlist(sapply(1:n, function(i) fusion[i - 1] - fusion[i]))
-    fusion <- fusion[1:(n - 1)]
-    optimal_nb_clusters <- which.max(diff) + 1
+    fusion <- rev(x$height)
+    diff <- unlist(sapply(1:max_cluster, function(i) fusion[i - 1] - fusion[i]))
+    fusion <- fusion[1:(max_cluster - 1)]
+    n_cluster <- which.max(diff) + 1
     setGraphic()
     # savePdf(paste(opt$output9, ".pdf", sep=""))
     plot(
-        2:n,
+        2:max_cluster,
         fusion,
         type = "b",
         ylim = c(round(min(fusion)) - 1, round(max(fusion)) + 1),
-        xlim = c(2, n + 1),
+        xlim = c(2, max_cluster + 1),
         xlab = "Nb. of clusters",
         ylab = "Cophenetic distance",
         col = "grey",
@@ -761,10 +746,10 @@ plotFusionLevels <- function(n = 6, c, verbose = FALSE) {
         "Fusion level method",
         fusion,
         " gain with the previous fusion level",
-        optimal_nb_clusters,
+        n_cluster,
         val2 = diff,
         verbose = verbose,
-        n = n
+        max_cluster = max_cluster
     )
     # suprLog = dev.off()
 }
@@ -775,19 +760,19 @@ plotElbow <- function(x, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nELBOW:\n")
     }
-    n <- length(x) + 1
+    max_cluster <- length(x) + 1
     within <- c(100, 100 - x)
-    ratio <- within[1:(n - 1)] / within[2:n]
+    ratio <- within[1:(max_cluster - 1)] / within[2:max_cluster]
     best <- round(min(ratio), 2)
-    optimal_nb_clusters <- which.min(ratio)
+    n_cluster <- which.min(ratio)
     setGraphic()
     # savePdf("elbow.pdf")
     plot(
-        1:n,
+        1:max_cluster,
         within,
         type = "b",
         ylim = c(min(within) - 1, 101),
-        xlim = c(1, n + 1),
+        xlim = c(1, max_cluster + 1),
         xlab = "Nb. of clusters",
         ylab = "Relative within inertia (%)",
         col = "grey",
@@ -797,11 +782,11 @@ plotElbow <- function(x, verbose = FALSE) {
         "Elbow method",
         within,
         " Wk/Wk+1 ratio ",
-        optimal_nb_clusters,
+        n_cluster,
         5,
         1,
         best,
-        n = n,
+        max_cluster = max_cluster,
         verbose = verbose
     )
     # suprLog = dev.off()
@@ -813,44 +798,44 @@ plotElbow <- function(x, verbose = FALSE) {
 
 # Ouput: an ordered silhouette object
 #' @export
-getSilhouette <- function(cl_k, d) {
-    s <- sortSilhouette(silhouette(cl_k, d))
-    rownames(s) <- labels(d)[attr(s, "iOrd")]
+getSilhouette <- function(dist, cl_k) {
+    s <- sortSilhouette(silhouette(cl_k, dist))
+    rownames(s) <- labels(dist)[attr(s, "iOrd")]
     return(s)
 }
 
 #' @export
-getSilhouettePerPart <- function(cl, d) {
+getSilhouettePerPart <- function(dist, cl) {
     list_sil <- list()
     for (k in 2:(length(cl) + 1)) {
-        list_sil[[k - 1]] <- getSilhouette(cl[[k - 1]], d)
+        list_sil[[k - 1]] <- getSilhouette(dist, cl[[k - 1]])
     }
     return(list_sil)
 }
 
-# sils: list of silhouettes objects per partition
+# x: list of silhouettes objects per partition
 #' @export
-getMeanSilhouettePerPart <- function(sils) {
-    unlist(sapply(1:length(sils), function(i) summary(sils[[i]])$avg.width))
+getMeanSilhouettePerPart <- function(x) {
+    unlist(sapply(1:length(x), function(i) summary(x[[i]])$avg.width))
 }
 
 # Plot the best average silhouette width for all clustering possible
-# mean_sils: vector of silhouette average width
+# x: vector of silhouette average width
 #' @export
-plotSilhouettePerPart <- function(mean_silhouette, verbose = FALSE) {
+plotSilhouettePerPart <- function(x, verbose = FALSE) {
     if (isTRUE(verbose)) {
         cat("\nSILHOUETTE:\n")
     }
     setGraphic()
     # savePdf(opt$output1)
-    optimal_nb_clusters <- which.max(mean_silhouette) + 1
-    n <- length(mean_silhouette)
+    n_cluster <- which.max(x) + 1
+    max_cluster <- length(x)
     plot(
-        2:(n + 1),
-        mean_silhouette,
+        2:(max_cluster + 1),
+        x,
         type = "b",
-        xlim = c(2, n + 2),
-        ylim = c(0, max(mean_silhouette) + 0.1),
+        xlim = c(2, max_cluster + 2),
+        ylim = c(0, max(x) + 0.1),
         col = "grey",
         xlab = "Nb. of clusters",
         ylab = "Average silhouette width",
@@ -858,28 +843,28 @@ plotSilhouettePerPart <- function(mean_silhouette, verbose = FALSE) {
     )
     plotBestClustering(
         "Silhouette method",
-        mean_silhouette,
-        "n average width",
-        optimal_nb_clusters,
+        x,
+        "max_cluster average width",
+        n_cluster,
         0.1,
         verbose = verbose,
-        n = (n + 1)
+        max_cluster = (max_cluster + 1)
     )
     # suprLog = dev.off()
-    # return (optimal_nb_clusters)
+    # return (n_cluster)
 }
 
-# sil_k: a silhouette object
+# x: a silhouette object
 #' @export
-plotSilhouette <- function(sil_k, colour = NULL) {
+plotSilhouette <- function(x, colour = NULL) {
   if (is.null(colour)) {
-    colour <- colorClusters(sil_k[, 1])
+    colour <- colorClusters(x[, 1])
   }
     # pdf(opt$output2)
     # setGraphicBasic()
     par(mar = c(4, 12, 3, 2))
     plot(
-        sil_k,
+        x,
         max.strlen = MAX_CHAR_LEN,
         main = "",
         sub = "",
@@ -892,7 +877,7 @@ plotSilhouette <- function(sil_k, colour = NULL) {
         axes = FALSE
     )
     mtext(
-        paste("Average silhouette width:", round(summary(sil_k)$avg.width, 3)),
+        paste("Average silhouette width:", round(summary(x)$avg.width, 3)),
         font = 2,
         cex = 1.5,
         line = 1
@@ -905,47 +890,46 @@ plotSilhouette <- function(sil_k, colour = NULL) {
 #          GAP STATISTICS
 ###################################
 
-# B: nb of NB_BOOTSTRAP
+# n_bootstrap: nb of NB_BOOTSTRAP
 #' @export
-getGapPerPart <- function(n = 6, d, c, B = 500, v = FALSE) {
+getGapPerPart <- function(x, c, max_cluster = 6, n_bootstrap = 500, verbose = FALSE) {
     # FUN mus have only two args in this order and return a list with an object cluster
 
-    if (isTRUE(v)) {
+    if (isTRUE(verbose)) {
         cat("\nGAP STATISTICS:\n")
     }
-    if (c$method == "kmeans" & (n > 10 | nrow(d) >= 100)) {
+    if (c$method == "kmeans" & (max_cluster > 10 | nrow(x) >= 100)) {
         plural <- c("few ", "s")
     } else {
         plural <- c("", "")
     }
     if (c$method == "kmeans" |
-        nrow(d) >= 100) {
+        nrow(x) >= 100) {
         cat(paste("It could take a ", plural[1], "minute", plural[2], "...\n", sep = ""))
     }
 
-    gapFun <- function(x, k) list(cluster = getClusters(k, c))
-    clusGap(d, FUNcluster = gapFun, K.max = n, verbose = FALSE, B = B)
+    gapFun <- function(x, k) list(cluster = getClusters(c, n_cluster = k))
+    clusGap(x, FUNcluster = gapFun, K.max = max_cluster, verbose = FALSE, B = n_bootstrap)
 }
 
-# g: gap object
-getGapBest <- function(g, M = "Tibs2001SEmax") {
-    with(g, maxSE(Tab[, "gap"], Tab[, "SE.sim"], method = M))
+# x: gap statisctics object
+getGapBest <- function(x, method = "Tibs2001SEmax") {
+    with(x, maxSE(Tab[, "gap"], Tab[, "SE.sim"], method = method))
 }
 
 # Plot the gap statistics width for all clustering possible
-# TODO: HERE
 #' @export
-plotGapPerPart <- function(g, n = 6, verbose = FALSE) {
+plotGapPerPart <- function(x, max_cluster = 6, verbose = FALSE) {
     setGraphic()
     # savePdf("gap_statistics.pdf")
-    optimal_nb_clusters <- getGapBest(g)
-    gap_k <- round(g$Tab, 3)
-    best <- gap_k[, "gap"][optimal_nb_clusters]
-    if (optimal_nb_clusters < n) {
-        best <- paste(best, ">", gap_k[, "gap"][optimal_nb_clusters + 1], "-", gap_k[, "SE.sim"][optimal_nb_clusters + 1])
+    n_cluster <- getGapBest(x)
+    gap_k <- round(x$Tab, 3)
+    best <- gap_k[, "gap"][n_cluster]
+    if (n_cluster < max_cluster) {
+        best <- paste(best, ">", gap_k[, "gap"][n_cluster + 1], "-", gap_k[, "SE.sim"][n_cluster + 1])
     }
     plot(
-        g,
+        x,
         arrowArgs = list(
             col = "gray",
             length = 1 / 15,
@@ -954,8 +938,8 @@ plotGapPerPart <- function(g, n = 6, verbose = FALSE) {
             code = 3
         ),
         type = "b",
-        xlim = c(1, n + 1),
-        ylim = c(0, max(g$Tab[, "gap"]) + 0.1),
+        xlim = c(1, max_cluster + 1),
+        ylim = c(0, max(x$Tab[, "gap"]) + 0.1),
         col = "grey",
         xlab = "Nb. of clusters",
         ylab = expression(Gap[k]),
@@ -964,14 +948,14 @@ plotGapPerPart <- function(g, n = 6, verbose = FALSE) {
     )
     plotBestClustering(
         "Gap statistics method",
-        g$Tab[, "gap"],
+        x$Tab[, "gap"],
         " gap value",
-        optimal_nb_clusters,
+        n_cluster,
         0.1,
         1,
         best,
         verbose = verbose,
-        n = n
+        max_cluster = max_cluster
     )
     # cat(paste("With a corrected index, optimal number of clusters k =",getGapBest(gap,"firstSEmax"), "\n"))
     # suprLog = dev.off()
@@ -979,15 +963,15 @@ plotGapPerPart <- function(g, n = 6, verbose = FALSE) {
 
 # Plot the gap between the two function: within and random within average
 #' @export
-plotGapPerPart2 <- function(g, n = 6) {
+plotGapPerPart2 <- function(x, max_cluster = 6) {
     setGraphic()
     # savePdf("log_w_diff.pdf")
-    min_y <- round(min(g$Tab[, c(1, 2)]), 1)
-    max_y <- round(max(g$Tab[, c(1, 2)]), 1)
+    min_y <- round(min(x$Tab[, c(1, 2)]), 1)
+    max_y <- round(max(x$Tab[, c(1, 2)]), 1)
     plot(
         0,
         0,
-        xlim = c(1, n),
+        xlim = c(1, max_cluster),
         ylim = c(min_y - 0.1, max_y + 0.1),
         type = "n",
         xlab = "Nb. of clusters",
@@ -1005,16 +989,16 @@ plotGapPerPart2 <- function(g, n = 6) {
         cex = 1.2,
         line = 0.5
     )
-    optimal_nb_clusters <- getGapBest(g)
+    n_cluster <- getGapBest(x)
     abline(
-        v = optimal_nb_clusters,
+        v = n_cluster,
         col = "gray",
         lty = 2,
         lwd = 2
     )
-    lines(seq(1:n), g$Tab[, 1], type = "b", col = "red")
-    lines(seq(1:n), g$Tab[, 2], type = "b", col = "blue")
-    plotAxis(1, 1, n)
+    lines(seq(1:max_cluster), x$Tab[, 1], type = "b", col = "red")
+    lines(seq(1:max_cluster), x$Tab[, 2], type = "b", col = "blue")
+    plotAxis(1, 1, max_cluster)
     plotAxis(2, min_y, max_y, 0.1)
     legend(
         "topright",
@@ -1029,7 +1013,7 @@ plotGapPerPart2 <- function(g, n = 6) {
 
 #' @export
 printSummary <- function(between, diff, sil, gap = NULL) {
-    # TODO: no n = nrow(data)
+    # TODO: no max_cluster = nrow(data)
     summary <- cbind(between, diff, 100 - between, sil)
     names <- c(
         "Between-inertia (%)",
@@ -1051,56 +1035,56 @@ printSummary <- function(between, diff, sil, gap = NULL) {
 ################################
 
 # Inputs:
-# cl_size: vector of size for each clusters
-plotRect <- function(cl_sizes, colors, lwd = 3) {
+# x: vector of size for each clusters
+plotRect <- function(x, colors, lwd = 3) {
     # size of each clusters
     temp_size <- 0
-    for (i in 1:length(cl_sizes)) {
-        # y begin at the top, so sum(cl_sizes) must be substracted to y coord.
+    for (i in 1:length(x)) {
+        # y begin at the top, so sum(x) must be substracted to y coord.
         # rect(xleft, ybottom, xright, ytop)
         # +0.5 because x, y coord are shifted to 0.5 comparativly to plotcolors functions
         rect(
             temp_size + 0.5,
-            sum(cl_sizes) - temp_size - cl_sizes[i] + 0.5,
-            cl_sizes[i] + temp_size + 0.5,
-            sum(cl_sizes) - temp_size + 0.5,
+            sum(x) - temp_size - x[i] + 0.5,
+            x[i] + temp_size + 0.5,
+            sum(x) - temp_size + 0.5,
             border = colors[i],
             lwd = lwd
         )
         # memorize the size of the cluster (for a bottom-right shift)
-        temp_size <- temp_size + cl_sizes[i]
+        temp_size <- temp_size + x[i]
     }
 }
 
 # Outputs:
 # lenght of clusters ordered by the clusters order
-getOrderedClusterSize <- function(cl) {
-    nb_cl <- length(levels(as.factor(cl)))
+getOrderedClusterSize <- function(x) {
+    nb_cl <- length(levels(as.factor(x)))
     size_cl <- rep(0, nb_cl)
-    temp_cl <- rep(0, length(cl))
+    temp_cl <- rep(0, length(x))
     j <- 0
 
-    for (i in 1:length(cl)) {
-        if (!cl[i] %in% temp_cl) {
+    for (i in 1:length(x)) {
+        if (!x[i] %in% temp_cl) {
             j <- j + 1
         }
         size_cl[j] <- size_cl[j] + 1
-        temp_cl[i] <- cl[i]
+        temp_cl[i] <- x[i]
     }
     return(size_cl)
 }
 
 # Inputs:
-# df: data frame
-# d: a distance object
+# x: data frame
+# dist: a distance object
 # s: an organised silhouette object
 # c: CAH
 # cl: clusters from CAH
 #' @export
-heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbose = FALSE) {
+heatMap <- function(x, dist, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbose = FALSE) {
     plot.new()
     printProgress(verbose, "Heatmap calculation")
-    text <- isTRUE(isTRUE(TEXT) & (nrow(data) < 100))
+    text <- isTRUE(isTRUE(TEXT) & (nrow(x) < 100))
 
     if (!is.null(s)) {
         order <- attr(s, "iOrd")
@@ -1114,14 +1098,14 @@ heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbos
         colors <- orderColors(c, cl)
     }
 
-    matrix <- as.matrix(d)
+    matrix <- as.matrix(dist)
     matrix <- matrix[order, order]
-    rownames(matrix) <- rownames(df)[order] -> labels
+    rownames(matrix) <- rownames(x)[order] -> labels
     # if(tri == TRUE) matrix[!lower.tri(matrix)] = NA
     # image(1:ncol(matrix), 1:ncol(matrix), t(matrix), axes=FALSE, xlab="", ylab="")
 
     options(warn = -1)
-    if (nrow(df) > NB_ROW_MAX) {
+    if (nrow(x) > NB_ROW_MAX) {
         labels <- order
     }
     # png(opt$output4,DIM_PNG, DIM_PNG)
@@ -1178,7 +1162,7 @@ heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbos
     )
     plotRect(cl_sizes, colors, lwd.rect)
     if (isTRUE(text)) {
-        text(expand.grid(1:ncol(matrix), ncol(matrix):1), sprintf("%d", matrix), cex = 0.4)
+        text(expand.grid(1:ncol(matrix), ncol(matrix):1), sprintf("%.2f", matrix), cex = 0.4)
     }
 
     par(fig = c(0.85, 1, 0.3, 0.8), new = TRUE)
@@ -1220,11 +1204,12 @@ heatMap <- function(df, d, s = NULL, c = NULL, cl = NULL, is_png = FALSE, verbos
 ################################
 
 # Inputs:
-# k: number of clusters
+# n_cluster: number of clusters
+# x: clustering object
 #' @export
-plotDendrogram <- function(k = 2, c, n = 6, cl) {
+plotDendrogram <- function(x, cl, n_cluster = 2, max_cluster = 6) {
     if (length(cl) > NB_ROW_MAX) {
-        c$labels <- 1:length(cl)
+        x$labels <- 1:length(cl)
         cex <- 0.4
     } else {
         cex <- 0.8
@@ -1233,10 +1218,10 @@ plotDendrogram <- function(k = 2, c, n = 6, cl) {
     setGraphicBasic()
     par(mar = c(2, 5, 5, 1))
     plot(
-        c,
+        x,
         hang = -1,
-        ylim = c(0, max(c$height)),
-        xlim = c(0, length(c$labels)),
+        ylim = c(0, max(x$height)),
+        xlim = c(0, length(x$labels)),
         sub = "",
         cex = cex,
         font = 3,
@@ -1244,16 +1229,17 @@ plotDendrogram <- function(k = 2, c, n = 6, cl) {
         main = "Dendrogram",
         axes = FALSE
     )
-    plotAxis(2, 0, max(c$height))
-    abline(h = rev(c$height)[1:n], col = "gray", lty = 2, lwd = 1)
+    plotAxis(2, 0, max(x$height))
+    abline(h = rev(x$height)[1:max_cluster], col = "gray", lty = 2, lwd = 1)
     # projection of the clusters
-    rect.hclust(c, k = as.numeric(k), border = orderColors(c, cl))
+    rect.hclust(x, k = as.numeric(n_cluster), border = orderColors(x, cl))
     # suprLog = dev.off()
 }
 
 # Get colors ordered for dendrogram
-orderColors <- function(c, cl) {
-    col_in <- colorClusters(cl)[c$order]
+# x: clustering object
+orderColors <- function(x, cl) {
+    col_in <- colorClusters(cl)[x$order]
     j <- 1
     col_ordered <- rep(NA, length(table(cl)))
     col_ordered[1] <- col_in[1]
@@ -1273,21 +1259,21 @@ orderColors <- function(c, cl) {
 
 # nf: number of factorial axis
 #' @export
-plotPca <- function(pca, d, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png = FALSE) {
+plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png = FALSE) {
     k <- length(levels(as.factor(cl)))
 
-    if (nrow(d) > NB_ROW_MAX) {
+    if (nrow(data) > NB_ROW_MAX) {
         cpoint <- 0
         cstar <- 0
         cellipse <- 0
         clabel <- 0
-        labels <- 1:nrow(d)
+        labels <- 1:nrow(data)
     } else {
         cpoint <- 0
         cstar <- 1
         cellipse <- 1
         clabel <- 0
-        labels <- rownames(d)
+        labels <- rownames(data)
     }
 
     if (is_png) {
@@ -1305,12 +1291,12 @@ plotPca <- function(pca, d, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png =
         line.main <- 1
     }
 
-    title <- paste("Cumulated inertia:", round((pca$eig[axis1] + pca$eig[axis2]) / sum(pca$eig), 4) * 100, "%")
+    title <- paste("Cumulated inertia:", round((x$eig[axis1] + x$eig[axis2]) / sum(x$eig), 4) * 100, "%")
     s.class(
         addaxes = FALSE,
-        cbind(pca$li[, axis1], pca$li[, axis2]),
-        ylim = c(min(pca$li[, axis2]) + min(pca$li[, axis2]) / 4, max(pca$li[, axis2]) + max(pca$li[, axis2]) / 2),
-        xlim = c(min(pca$li[, axis1]), max(pca$li[, axis1])),
+        cbind(x$li[, axis1], x$li[, axis2]),
+        ylim = c(min(x$li[, axis2]) + min(x$li[, axis2]) / 4, max(x$li[, axis2]) + max(x$li[, axis2]) / 2),
+        xlim = c(min(x$li[, axis1]), max(x$li[, axis1])),
         csub = 1.5,
         as.factor(cl),
         grid = FALSE,
@@ -1323,8 +1309,8 @@ plotPca <- function(pca, d, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png =
     mtext(title, font = 2, line = line.main, cex = cex.main)
     abline(h = 0, v = 0, lty = 2, lwd = lwd.line, col = "grey")
     text(
-        x = pca$li[, axis1],
-        y = pca$li[, axis2],
+        x = x$li[, axis1],
+        y = x$li[, axis2],
         labels = labels,
         col = colorClusters(cl),
         cex = cex
@@ -1333,14 +1319,14 @@ plotPca <- function(pca, d, cl, axis1 = 1, axis2 = 2, advanced = FALSE, is_png =
 
     if (isTRUE(advanced)) {
         par(fig = c(0.8, 1, 0.82, 1), new = TRUE)
-        plotInertiaPca(pca, d, pca$nf)
+        plotInertiaPca(x, data, x$nf)
     }
     # suprLog = dev.off()
 }
 
 # nf: number of inertia bar plot corresponding to factorial axis
-plotInertiaPca <- function(pca, d, nf = 4) {
-    if (nrow(d) > NB_ROW_MAX) {
+plotInertiaPca <- function(x, data, nf = 4) {
+    if (nrow(data) > NB_ROW_MAX) {
         r_lim <- c(8, 0, 4, 5)
         r_main_cex <- 2.7
         r_main_text <- 2.4
@@ -1355,7 +1341,7 @@ plotInertiaPca <- function(pca, d, nf = 4) {
         line.hist <- 0
     }
 
-    inertia <- round(pca$eig / sum(pca$eig) * 100, 1)
+    inertia <- round(x$eig / sum(x$eig) * 100, 1)
     par(mar = c(r_lim[1], r_lim[2], r_lim[3], r_lim[4]) + 0.1)
     plot(
         inertia,
@@ -1388,41 +1374,42 @@ plotInertiaPca <- function(pca, d, nf = 4) {
 #########################################
 
 #' @export
-getDistPerVariable0 <- function(d, cl) {
+getDistPerVariable0 <- function(x, cl) {
     nb_cl <- max(cl)
     i_rows <- sapply(seq(nb_cl), function(i) {
         which(cl == i)
     })
     sapply(seq(nb_cl), function(i) {
-        apply(d[i_rows[[i]], , drop = FALSE], 2, function(j) {
+        apply(x[i_rows[[i]], , drop = FALSE], 2, function(j) {
             mean(j, na.rm = TRUE)
         })
     }) %>% t() %>% set_rownames(paste0("G", seq(nb_cl)))
 }
+
 # For a given partition (cl) and each variables (dataset columns)
 # pondered distance between the centroid of each clusters and the global centroid of the cloud
 # Inputs:
-# d: data
+# x: data
 # cl: clusters object
-getDistPerVariable <- function(d, cl) {
+getDistPerVariable <- function(x, cl) {
     # Distance between the centroid of each variables
     # ponderation by the sd of the variable (=total inertia per var)
-    d <- scalecenter(d)
+    x <- scalecenter(x)
     nb_cl <- length(levels(as.factor(cl)))
-    ctr <- matrix(0, nrow = nb_cl, ncol = ncol(d))
+    ctr <- matrix(0, nrow = nb_cl, ncol = ncol(x))
 
-    for (i in 1:nrow(d)) {
+    for (i in 1:nrow(x)) {
         # get the group number for each row
         cli <- cl[i]
         # in the dataset, for a metabolite row, loop an each metadabolite column
         # values are affected the corresponding cluster row and metabolite column in ctr
-        for (j in 1:ncol(d)) {
-            if(!is.na(d[i, j])) {
-                ctr[cli, j] <- ctr[cli, j] + d[i, j]
+        for (j in 1:ncol(x)) {
+            if(!is.na(x[i, j])) {
+                ctr[cli, j] <- ctr[cli, j] + x[i, j]
             }
         }
     }
-    colnames(ctr) <- colnames(d)
+    colnames(ctr) <- colnames(x)
     rownames(ctr) <- unique(cl)
     return(ctr)
 }
@@ -1430,39 +1417,38 @@ getDistPerVariable <- function(d, cl) {
 # For a given partition, relative contributions of each metabolites to inertia of each clusters (CTR)
 # The total of the clusters for each column corresponds to PDIS
 # Inputs:
-# t: number of type of classification
-# k: number of clusters
+# n_cluster: number of clusters
 # c: hierarchical classification
-# d: data
+# x: data
 #' @export
-getCtrVar <- function(k = 2, cl, d) {
+getCtrVar <- function(x, cl, n_cluster = 2) {
 
     # if NA values appear, scale 0/0 could produce NA values, NA could correspond to 0
     nb_cl <- length(levels(as.factor(cl)))
-    ncol <- ncol(d)
-    ctr <- getDistPerVariable(d, cl)
+    ncol <- ncol(x)
+    ctr <- getDistPerVariable(x, cl)
 
-    rownames(ctr) <- paste("G", seq(1, k), sep = "")
-    colnames(ctr) <- colnames(d)
+    rownames(ctr) <- paste("G", seq(1, n_cluster), sep = "")
+    colnames(ctr) <- colnames(x)
 
     for (i in 1:nb_cl) {
-        for (j in 1:ncol(d)) {
-            ctr[i, j] <- ctr[i, j]^2 / (nrow(d) * length(cl[cl == i]))
+        for (j in 1:ncol(x)) {
+            ctr[i, j] <- ctr[i, j]^2 / (nrow(x) * length(cl[cl == i]))
         }
     }
 
     return(ctr)
 }
 
-getCtrVar2 <- function(k = 2, cl, d, scale = TRUE) {
-    ctr <- getCtrVar(k, cl, d)
+getCtrVar2 <- function(x, cl, n_cluster = 2, scale = TRUE) {
+    ctr <- getCtrVar(x, cl, n_cluster)
     nb_cl <- length(levels(as.factor(cl)))
 
     if (isTRUE(scale)) {
-        ctr_part <- getPdis(k, cl, d)
+        ctr_part <- getPdis(x, cl, n_cluster)
 
         for (i in 1:nb_cl) {
-            for (j in 1:ncol(d)) {
+            for (j in 1:ncol(x)) {
                 if (scale) {
                     ctr[i, j] <- ctr[i, j] / ctr_part[j]
                 }
@@ -1476,28 +1462,28 @@ getCtrVar2 <- function(k = 2, cl, d, scale = TRUE) {
 # Discriminant power (PDIS)
 # Relative contributions of the metabolites to inertia of a partitionning (in %)
 # Inputs:
-# k: number of clusters
+# n_cluster: number of clusters
 # c: hierarchical classification
-# d: data
-getPdis <- function(k = 2, cl, d) {
+# x: data
+getPdis <- function(x, cl, n_cluster = 2) {
 
-    # for each metabolite contribution (in column), sum the k clusters values
-    return(apply(getCtrVar(k, cl, d), 2, sum))
+    # for each metabolite contribution (in column), sum the n_cluster clusters values
+    return(apply(getCtrVar(x, cl, n_cluster), 2, sum))
 }
 
 # Inputs:
-# n: number max of clusters
-# cls: list of clusters
-# d: data
+# max_cluster: number max of clusters
+# cl: list of clusters
+# x: data
 # index: pdis or rho2 calculation
 #' @export
-getPdisPerPartition <- function(n = 6, cls, d) {
-    pdis_per_partition <- matrix(NA, n - 1, ncol(d))
-    rownames(pdis_per_partition) <- seq(2, n)
-    colnames(pdis_per_partition) <- colnames(d)
+getPdisPerPartition <- function(x, cl, max_cluster = 6) {
+    pdis_per_partition <- matrix(NA, max_cluster - 1, ncol(x))
+    rownames(pdis_per_partition) <- seq(2, max_cluster)
+    colnames(pdis_per_partition) <- colnames(x)
 
-    for (k in 2:n) {
-        res <- getPdis(k, cls[[k - 1]], d)
+    for (k in 2:max_cluster) {
+        res <- getPdis(x, cl[[k - 1]], k)
         for (i in 1:length(res)) {
             pdis_per_partition[k - 1, i] <- res[i]
         }

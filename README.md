@@ -144,7 +144,7 @@ is determined by the minimum average silhouette width.
   ![gap_statistics](inst/extdata/img/gap_statistics.png)
 - `log_w_diff.pdf` : differences between the within-inertia log from the
   dataset and from a random bootstrap, also called gap statistics.
-  ![log_w\_diff](inst/extdata/img/log_w_diff.png)
+  ![log_w_diff](inst/extdata/img/log_w_diff.png)
 - `contribution.tsv` : contribution of each column to the inertia of
   each cluster for the optimal partitioning.
 - `discriminant_power.tsv` : contribution of each column to the inertia

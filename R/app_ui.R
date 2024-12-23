@@ -25,8 +25,8 @@ app_ui <- function(request) {
     tagList(
         golem_add_external_resources(),
         fluidPage(
-            title = golem::get_golem_name(),
-            h1(golem::get_golem_name()),
+            title = "GimmeMyCluster",
+            h1("GimmeMyCluster"),
             tags$p(
                 tags$a(
                     href = "https://github.com/ecamenen/tcgaViz",

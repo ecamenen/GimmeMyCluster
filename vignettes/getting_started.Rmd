@@ -66,7 +66,7 @@ as.matrix(dist) %>% as_tibble(dist)
 
 ...and used to perform the clustering (using Ward by default).
 ```{r}
-clustering <- getClassif(dist = dist)
+clustering <- run_clustering(dist = dist)
 clustering
 ```
 

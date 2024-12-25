@@ -312,7 +312,7 @@ dis <- getDistance(data, method = opt$distance)
 if (CLASSIF_TYPE < 3) {
     printProgress(VERBOSE_NIV2, "Classification")
 }
-classif <- getClassif(data = data, dist = dis, method = CLASSIF_TYPE, max_cluster = MAX_CLUSTERS)
+classif <- run_clustering(data = data, dist = dis, method = CLASSIF_TYPE, max_cluster = MAX_CLUSTERS)
 list_clus <- getClusterPerPart(classif, max_cluster = MAX_CLUSTERS)
 optimal_nb_clusters <- 2
 clusters <- list_clus[[optimal_nb_clusters - 1]]

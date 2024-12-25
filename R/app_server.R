@@ -121,7 +121,7 @@ app_server <- function(input, output, session) {
         # Perform classification
         printProgress(vars$verbose2, "Classification")
 
-        vars$classif <- getClassif(data = vars$data, dist = vars$dis, method = vars$classif_type, max_cluster = vars$max_clusters)
+        vars$classif <- run_clustering(data = vars$data, dist = vars$dis, method = vars$classif_type, max_cluster = vars$max_clusters)
         if (vars$verbose2) {
             cat("done.\n")
         }
@@ -195,12 +195,12 @@ app_server <- function(input, output, session) {
         vars$plotPCA <- expr(
           plotPca(
             vars$pca,
-            vars$data,
-            vars$cl_k,
-            vars$axis1,
-            vars$axis2,
-            vars$advanced,
-            vars$png
+            data = vars$data,
+            cl = vars$cl_k,
+            axis1 = vars$axis1,
+            axis2 = vars$axis2,
+            advanced = vars$advanced,
+            is_png = vars$png
           )
         )
         vars$plotBest <- expr(plotSilhouettePerPart(vars$mean_sils))

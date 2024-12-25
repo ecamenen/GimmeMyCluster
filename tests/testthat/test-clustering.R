@@ -8,7 +8,7 @@ dist_euc <- dist(df)  # Euclidean distance
 dist_man <- dist(df, method = "manhattan")  # Manhattan distance
 
 # Perform hierarchical clustering using Ward's method with Euclidean distance
-clustering_ward <- getCAH(dist_euc)
+clustering_ward <- run_ahc(dist_euc)
 
 # Extract clustering results for different partitions
 cls <- getClusterPerPart(clustering_ward)  # Default number of partitions
@@ -23,14 +23,14 @@ test_that("clustering", {
   expect_identical(clustering_ward$method, "ward.D2")
 
   # Test Partitioning Around Medoids (PAM) with Euclidean distance
-  expect_s3_class(getCNH(dist = dist_euc), "pam")
+  expect_s3_class(run_nhc(dist = dist_euc), "pam")
 
   # Test k-means clustering
-  clustering <- getClassif(data = df, method = 2)
+  clustering <- run_clustering(data = df, method = 2)
   expect_identical(clustering$method, "kmeans")
 
   # Ensure clustering results for 2 to 6 clusters are all k-means objects
-  sapply(2:6, function(x) class(clustering[[x]])) %>%
+  sapply(seq(5), function(x) class(clustering$results[[x]])) %>%
     unique() %>%
     expect_identical("kmeans")
 })
@@ -54,17 +54,19 @@ test_that("cluster", {
   expect_identical(clustering_ward$dist.method, "euclidean")
 
   # Test clustering with Manhattan distance
-  clustering_man <- getCAH(dist_man)
+  clustering_man <- run_ahc(dist_man)
   expect_identical(clustering_man$dist.method, "manhattan")
 
   # Test PAM clustering with Manhattan distance
-  getClassif(dist = dist_man, method = 1) %>%
-    getClusterPerPart() %>%
+  run_clustering(dist = dist_man, method = 1) %>%
+    extract_clusters() %>%
+    pluck("clusters") %>%
     test_clusters()
 
   # Test k-means clustering with standardized data
-  getClassif(data = df, method = 2) %>%
-    getClusterPerPart() %>%
+  run_clustering(data = df, method = 2) %>%
+    extract_clusters() %>%
+    pluck("clusters") %>%
     test_clusters()
 })
 
@@ -97,11 +99,11 @@ test_that("coefAggl", {
 })
 
 # ---- CLUSTER COLORING TEST ----
-test_that("colorClusters", {
+test_that("color_cluster", {
   # Validate cluster coloring is applied correctly
-  colorClusters(cls[[2]]) %>%
+  color_cluster(cls[[2]]) %>%
     unique() %>%
-    expect_identical(c("#991A80FF", "#809926FF", "#0000FFFF"))
+    expect_identical(brewer.pal(9, "Set1")[seq(3)])
 })
 
 # ---- CLUSTER CENTROID TEST ----

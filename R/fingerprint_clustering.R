@@ -226,14 +226,7 @@ writeTsv <- function(x, f = NULL, cl = FALSE, verbose = TRUE) {
 ################################
 
 palette_perso <- function() {
-  c(
-  rgb(0.6, 0.1, 0.5, 1),
-  rgb(1, 0, 0, 1),
-  rgb(0.9, 0.6, 0, 1),
-  rgb(0.1, 0.6, 0.3, 1),
-  rgb(0.1, 0.6, 0.5, 1),
-  rgb(0, 0, 1, 1)
-)
+  brewer.pal(9, "Set1")
 }
 
 # Usage: colPers(x), x a number of colours in output
@@ -419,23 +412,28 @@ isSymmetric <- function(x) {
 #          Clustering
 ################################
 
-# Inputs:
-# method: number of method of classification
-# data: data
-# x: distance matrix
-# Ouput: Hierarchical classification
-getCAH <- function(x, method = 3) {
-    if (method > 2) {
-        if (method == 8 | method == 9) {
-            checkEuclidean(x)
-        }
-
-        # cah: classification hierarchic ascending
-        cah <- hclust(x, method = getClassifType(method))
-        # automaticly ordering by clusters
-        return(reorder.hclust(cah, x))
+#' Hierarchical Clustering
+#'
+#' Perform hierarchical clustering.
+#'
+#' @inheritParams run_clustering
+#' @param x A matrix or data frame of integers.
+#' @return An reordered `hclust` object.
+#' @export
+#' @examples
+#' dist_matrix <- dist(iris[, -5])
+#' run_ahc(dist_matrix)
+#' run_ahc(dist_matrix, method = 4)
+run_ahc <- function(x, method = 3, ...) {
+  if (method > 2) {
+    if (method %in% c(8:9)) {
+      checkEuclidean(x)
     }
+    hclust(x, method = getClassifType(method), ...) %>%
+      reorder.hclust(x)
+  }
 }
+
 
 # Selects best algo based on cophenetic calculation
 # x: data
@@ -443,7 +441,7 @@ getCAH <- function(x, method = 3) {
 selectBestCAH <- function(x, dist, verbose = FALSE) {
     temp <- 0
     for (i in 3:9) {
-        cah <- getCAH(x, method = i)
+        cah <- run_ahc(x, method = i)
         res <- cor(dist, cophenetic(cah))
         if (isTRUE(verbose)) {
             cat(paste(getClassifType(i), ":", round(res, 3), "\n"))
@@ -480,72 +478,121 @@ getCoefAggl <- function(x) {
     coef.hclust(x)
 }
 
-# Inputs:
-# method: number of method of classification
-# data: data
-# dist: distance
-# n_cluster: number of clustering
-# Ouput: Non-hierarchical classification
-getCNH <- function(data = NULL, dist = NULL, n_cluster = 2, method = 1, centers = NULL, nrun = 100) {
-    if (method == 1) {
-        if (!is.null(centers)) {
-            return(pam(dist, n_cluster, diss = TRUE, medoids = centers))
-        }
-        return(pam(dist, n_cluster, diss = TRUE))
-    } else if (method == 2) {
-        if (!is.null(centers)) {
-            n_cluster <- centers
-        }
-        return(kmeans(data, centers = n_cluster, nstart = nrun))
-    }
-}
-
+#' Non-Hierarchical Clustering
+#'
+#' Perform non-hierarchical clustering using K-means or K-medoids (PAM) methods.
+#'
+#' @inheritParams run_clustering
+#' @param n_cluster Integer for the number of clusters.
+#' @return A `pam` or `kmeans` object.
 #' @export
-getClassif <- function(data = NULL, dist = NULL, method = 3, max_cluster = 6, centers = NULL, nrun = 100) {
-    if (method > 2) {
-        getCAH(dist, method = method)
-    } else {
-        list_cnh <- list("method" = getClassifType(method))
-        for (k in 2:(max_cluster + 1)) {
-            list_cnh[[k]] <- getCNH(data = data, dist = dist, method = method, n_cluster = k, centers = centers[[k - 1]], nrun = nrun)
-        }
-        return(list_cnh)
-    }
+#' @examples
+#' dist_matrix <- dist(iris[, -5])
+#' run_nhc(dist = dist_matrix)
+#' run_nhc(data = iris[, -5], n_cluster = 3, method = 2)
+run_nhc <- function(data = NULL, dist = NULL, n_cluster = 2, method = 1, centers = NULL, nstart = 100, ...) {
+  if (method == 1) {
+      pam(dist, k = n_cluster, diss = TRUE, medoids = centers, nstart = nstart, ...)
+  } else{
+      kmeans(data, centers = centers %||% n_cluster, nstart = nstart, ...)
+  }
 }
 
-# Inputs:
-# n_cluster: number of clusters
-# x: hierarchical classification
-# d: data
-# Output: partitionning contening n_cluster clusters
+#' Perform clustering
+#'
+#' Perform either hierarchical or non-hierarchical clustering.
+#'
+#' @inheritParams stats::kmeans
+#' @param data A matrix or data frame of integers.
+#' @param dist A `dist object.
+#' @param method Integer for the clustering method.
+#' @param max_cluster Integer for the maximum number of clusters.
+#' @return A list of clustering results for different numbers of clusters.
 #' @export
-getClusters <- function(x, n_cluster = 2) {
-    if (x$method == "kmedoids") {
-        x[[n_cluster]]$clustering
-    } else if (x$method == "kmeans") {
-        x[[n_cluster]]$cluster
-    } else {
-        cutree(x, n_cluster)
-    }
+#' @examples
+#' dist_matrix <- dist(iris[, -5])
+#' run_clustering(dist_matrix)
+#' run_clustering(data = iris[, -5], method = 2, max_cluster = 4)
+run_clustering <- function(dist = NULL, data = NULL, method = 3, max_cluster = 6, centers = NULL, nstart = 100, ...) {
+  if (method > 2) {
+    res <- run_ahc(dist, method = method, ...)
+  } else {
+    res <- map(
+      2:(max_cluster + 1),
+      ~ run_nhc(
+          data = data,
+          dist = dist,
+          n_cluster = .x,
+          method = method,
+          centers = centers,
+          nstart = nstart,
+          ...
+      )) %>%
+      list(results = .)
+    res[["method"]] <- getClassifType(method)
+  }
+  res$dist <- dist
+  class(res) <- c("clustering", class(res))
+  return(res)
 }
 
+#' Cluster assignments
+#'
+#' Extracts cluster assignments for a specific number of clusters.
+#'
+#' @inheritParams run_nhc
+#' @param x A clustering object.
+#' @return A vector of cluster assignments.
+#' @examples
+#' ward_result <- run_clustering(dist(iris[, -5]))
+#' extract_cluster(ward_result)
+#' kmeans_result <- run_clustering(data = iris[, -5], method = 2)
+#' extract_cluster(kmeans_result, n_cluster = 3)
 #' @export
-getClusterPerPart <- function(x, max_cluster = 6) {
-    cl <- list()
-    for (k in 2:max_cluster) {
-        cl[[k - 1]] <- getClusters(x, n_cluster = k)
-    }
-    return(cl)
+extract_cluster <- function(x, n_cluster = 2) {
+  if (x$method == "kmedoids") {
+    x$results[[n_cluster - 1]]$clustering
+  } else if (x$method == "kmeans") {
+    x$results[[n_cluster - 1]]$cluster
+  } else {
+    cutree(x, n_cluster)
+  }
 }
 
-# Input:
-# x: clusters
-colorClusters <- function(x, colour = palette_perso()) {
-    NB_CLUSTERS <- length(levels(as.factor(x)))
-    for (i in 1:NB_CLUSTERS) {
-        x[x == i] <- colPers(colour)(NB_CLUSTERS)[i]
-    }
-    return(x)
+#' Cluster assignments
+#'
+#' Extracts cluster assignments for a range of cluster numbers.
+#'
+#' @inheritParams extract_cluster
+#' @inheritParams run_clustering
+#' @return A clustering object with cluster assignments for each number of clusters.
+#' @examples
+#' ward_result <- run_clustering(dist(iris[, -5]))
+#' extract_clusters(ward_result)$clusters
+#' kmeans_result <- run_clustering(data = iris[, -5], method = 2)
+#' extract_clusters(kmeans_result, max_cluster = 3)$clusters
+#' @export
+extract_clusters <- function(x, max_cluster = 6) {
+  x$clusters <- map(2:max_cluster, ~ extract_cluster(x, n_cluster = .x))
+  return(x)
+}
+
+#' Color Clusters
+#'
+#' Assign colors to cluster partitions.
+#'
+#' @param x A vector of cluster assignements.
+#' @param colour A vector of colors.
+#' @return A vector of cluster assignments with color labels.
+#' @examples
+#' ward_result <- run_clustering(dist(iris[, -5]))
+#' cl <- extract_clusters(ward_result)$clusters[[1]]
+#' color_cluster(cl)
+#' @noRd
+color_cluster <- function(x, colour = palette_perso()) {
+  factor(x) %>%
+    as.integer() %>%
+    map_chr(~ colour[.x])
 }
 
 # Inputs:
@@ -859,10 +906,8 @@ plotSilhouettePerPart <- function(x, verbose = FALSE) {
 
 # x: a silhouette object
 #' @export
-plotSilhouette <- function(x, colour = NULL) {
-  if (is.null(colour)) {
-    colour <- colorClusters(x[, 1], colour = palette_perso())
-  }
+plotSilhouette <- function(x, colour = palette_perso()) {
+    colour <- color_cluster(x[, 1], colour)
     # pdf(opt$output2)
     # setGraphicBasic()
     par(mar = c(4, 12, 3, 2))
@@ -911,7 +956,7 @@ getGapPerPart <- function(x, c, max_cluster = 6, n_bootstrap = 500, verbose = FA
         cat(paste("It could take a ", plural[1], "minute", plural[2], "...\n", sep = ""))
     }
 
-    gapFun <- function(x, k) list(cluster = getClusters(c, n_cluster = k))
+    gapFun <- function(x, k) list(cluster = extract_cluster(c, n_cluster = k))
     clusGap(x, FUNcluster = gapFun, K.max = max_cluster, verbose = FALSE, B = n_bootstrap)
 }
 
@@ -1242,7 +1287,7 @@ plotDendrogram <- function(x, cl, n_cluster = 2, max_cluster = 6, colour = palet
 # Get colors ordered for dendrogram
 # x: clustering object
 orderColors <- function(x, cl, colour = palette_perso()) {
-    col_in <- colorClusters(cl, colour = colour)[x$order]
+    col_in <- color_cluster(cl, colour = colour)[x$order]
     j <- 1
     col_ordered <- rep(NA, length(table(cl)))
     col_ordered[1] <- col_in[1]
@@ -1315,7 +1360,7 @@ plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, colour = palette_perso(),
         x = x$li[, axis1],
         y = x$li[, axis2],
         labels = labels,
-        col = colorClusters(cl, colour = colour),
+        col = color_cluster(cl, colour = colour),
         cex = cex
     )
     # colnames(pca_coord) = c("Chemicals", "Axis 1", "Axis 2")

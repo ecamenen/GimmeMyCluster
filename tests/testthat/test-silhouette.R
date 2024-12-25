@@ -5,7 +5,7 @@ df <- scale(df0)
 
 # Perform hierarchical clustering using Ward's method on Euclidean distance
 dist <- dist(df)
-clustering_ward <- getCAH(dist)
+clustering_ward <- run_ahc(dist)
 
 # Extract cluster partitions
 cls <- getClusterPerPart(clustering_ward)  # Default partition

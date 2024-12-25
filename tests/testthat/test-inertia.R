@@ -4,7 +4,7 @@ df0 <- select(iris, -Species)
 df <- scale(df0)
 
 # Perform hierarchical clustering using Ward's method on Euclidean distance
-clustering_ward <- dist(df) %>% getCAH()
+clustering_ward <- dist(df) %>% run_ahc()
 cls <- getClusterPerPart(clustering_ward)  # Extract cluster partitions
 cl_full <- getClusterPerPart(clustering_ward, max_cluster = 150)  # Partition with 150 clusters
 

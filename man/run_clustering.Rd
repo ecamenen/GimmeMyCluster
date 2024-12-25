@@ -15,7 +15,7 @@ run_clustering(
 )
 }
 \arguments{
-\item{dist}{A `dist object.}
+\item{dist}{A \code{dist} object.}
 
 \item{data}{A matrix or data frame of integers.}
 
@@ -33,7 +33,7 @@ run_clustering(
 \item{...}{not used.}
 }
 \value{
-A list of clustering results for different numbers of clusters.
+A \code{clustering} object for different numbers of clusters.
 }
 \description{
 Perform either hierarchical or non-hierarchical clustering.

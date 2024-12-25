@@ -17,7 +17,7 @@ run_nhc(
 \arguments{
 \item{data}{A matrix or data frame of integers.}
 
-\item{dist}{A `dist object.}
+\item{dist}{A \code{dist} object.}
 
 \item{n_cluster}{Integer for the number of clusters.}
 

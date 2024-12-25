@@ -7,15 +7,16 @@
 extract_clusters(x, max_cluster = 6)
 }
 \arguments{
-\item{x}{A clustering object.}
+\item{x}{A \code{clustering} object.}
 
 \item{max_cluster}{Integer for the maximum number of clusters.}
 }
 \value{
-A clustering object with cluster assignments for each number of clusters.
+A \code{clustering} object with a new \code{clusters} attribute. This attribute
+contains a list of cluster assignments for each number of clusters.
 }
 \description{
-Extracts cluster assignments for a range of cluster numbers.
+Extract cluster assignments for each number of clusters.
 }
 \examples{
 ward_result <- run_clustering(dist(iris[, -5]))

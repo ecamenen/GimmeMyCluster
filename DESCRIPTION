@@ -36,7 +36,9 @@ Imports:
     shiny,
     shinyjs,
     stats,
+    tibble,
     tidyverse,
+    tidyr,
     utils
 Suggests:
     knitr,

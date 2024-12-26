@@ -100,13 +100,13 @@ sil_k[, 3]  %>% .[which.min(.)]
 
 Clustering aims to maximize between-cluster inertia (separation) an minimize within-cluster inertia (compactness). The Elbow plot propose another way to determine the optimal number of cluster using the "elbow" point, where inertia gains converge, as a reference.
 ```{r}
-between <- getRelativeBetweenPerPart(df_scaled, cls)
+between <- calculate_between_inertia(df_scaled, cls)
 plotElbow(between)
 ```
 
 Quality checks could be summarized in a table.
 ```{r}
-getBetweenDifferences(between) %>%
+calculate_between_diff(between) %>%
   printSummary(between, ., sil) %>% 
   pretty_table()
 ```

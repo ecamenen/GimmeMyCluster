@@ -109,18 +109,20 @@ test_that("color_cluster", {
 # ---- CLUSTER CENTROID TEST ----
 test_that("clusterCentroids", {
   # Compute cluster centroids for 2 clusters
-  res <- getClusterCentroids(df0, cls[[1]])
+  res <- calculate_centroids(df0, cls[[1]])
 
-  # Confirm centroid matrix dimensions (2 clusters, 4 variables)
-  expect_equal(dim(res), c(2, 4))
+  # Confirm centroid matrix dimensions (2 clusters, 4 variables + rownames)
+  expect_equal(dim(res), c(2, 5))
+  as.vector(pull(res, 1)) %>%
+    expect_identical(seq(2))
 
   # Check centroid values for the first variable
-  as.vector(res[, 1]) %>%
+  as.vector(pull(res, 2)) %>%
     round(6) %>%
     expect_identical(c(5.016327, 6.244554))
 
   # Test centroids for 150-cluster partition
-  getClusterCentroids(df0, cl_full[[149]]) %>%
+  calculate_centroids(df0, cl_full[[149]]) %>%
     dim() %>%
-    expect_equal(c(150, 4))
+    expect_equal(c(150, 5))
 })

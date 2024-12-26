@@ -10,47 +10,51 @@ cl_full <- getClusterPerPart(clustering_ward, max_cluster = 150)  # Partition wi
 
 # ---- TEST: RELATIVE BETWEEN-CLUSTER VARIANCE ----
 test_that("betweenPerPart", {
-  res <- getRelativeBetweenPerPart(df, cl = cls)
+  res <- calculate_between_inertia(df, cl = cls)
 
   # Expected relative variances
   round(res, 5) %>%
     expect_identical(c(61.87981, 75.18729, 80.52696, 84.16555, 85.66615))
-  # getRelativeBetweenPerPart(d = df0, cl = cls) %>%
+  # calculate_between_inertia(d = df0, cl = cls) %>%
   #   expect_equal(res)
 
   # Incremental differences in variance
-  getBetweenDifferences(res) %>%
+  calculate_between_diff(res) %>%
     round(6) %>%
     expect_identical(c(61.879806, 13.307485, 5.339665, 3.638599, 1.500597))
 
   # Full partition should explain 100% variance
-  expect_identical(getRelativeBetweenPerPart(df, cl = cl_full, max_cluster = 150)[149], 100)
+  expect_identical(calculate_between_inertia(df, cl = cl_full, max_cluster = 150)[149], 100)
 })
 
 # ---- TEST: WITHIN-CLUSTER VARIANCE ----
 test_that("withinPerCluster", {
   # Calculate within-cluster variance using the original unscaled data
-  res <- getRelativeWithinPerCluster(df0, cl = cls)
+  res <- calculate_within_inertia(df0, cl = cls)
 
   # Verify consistency between original and scaled data
-  getRelativeWithinPerCluster(df, cl = cls) %>%
+  calculate_within_inertia(df, cl = cls) %>%
     expect_equal(res)
 
   # Confirm within-cluster variance sums to 1
-  apply(res, 1, function(x) sum(x, na.rm = TRUE)) %>%
+  select(res, -1) %>%
+    apply(1, function(x) sum(x, na.rm = TRUE)) %>%
     round(6) %>%
     unique() %>%
-    expect_equal(1)
+    expect_equal(100)
 
-  # Dimension check: 5 partitions, max 6 clusters
-  expect_equal(dim(res), c(5, 6))
+  # Dimension check: 5 partitions, max 6 clusters + rownames
+  expect_equal(dim(res), c(5, 7))
 
   # Specific value check for the first partition
   res[1, ] %>%
+    unlist() %>%
     unique() %>%
-    round(7) %>%
-    expect_identical(c(0.6733333, 0.3266667, NA))
-  # TODO: after getRelativeWithinPerCluster optimization, test for max_cluster = 149
+    round(5) %>%
+    expect_identical(c(2, 67.33333, 32.66667, NA))
+
+  res <- calculate_within_inertia(df0, cl = cl_full)
+  expect_equal(dim(res), c(149, 151))
 })
 
 # ---- TEST: DISTANCE PER VARIABLE ----

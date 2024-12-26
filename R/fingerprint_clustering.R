@@ -367,7 +367,7 @@ savePdf <- function(f) {
 #' @export
 scalecenter <- function(x) {
     # output scale function: for each column, mean=0, sd=1
-    return(scale(x) * sqrt(nrow(x) / (nrow(x) - 1)))
+    scale(x) * sqrt(nrow(x) / (nrow(x) - 1))
     # ponderation for sampling index (var use n-1)
     # without this constante, for advanced outputs, total (max_cluster=nrow(data)) will be different from 1
 }
@@ -424,6 +424,7 @@ isSymmetric <- function(x) {
 #' dist_matrix <- dist(iris[, -5])
 #' run_ahc(dist_matrix)
 #' run_ahc(dist_matrix, method = 4)
+#' @noRd
 run_ahc <- function(x, method = 3, ...) {
   if (method > 2) {
     if (method %in% c(8:9)) {
@@ -488,7 +489,8 @@ getCoefAggl <- function(x) {
 #' @examples
 #' dist_matrix <- dist(iris[, -5])
 #' run_nhc(dist = dist_matrix)
-#' run_nhc(data = iris[, -5], n_cluster = 3, method = 2)
+#' run_nhc(data = iris[, -5], method = 2, max_cluster = 4)
+#' @noRd
 run_nhc <- function(data = NULL, dist = NULL, n_cluster = 2, method = 1, centers = NULL, nstart = 100, ...) {
   if (method == 1) {
       pam(dist, k = n_cluster, diss = TRUE, medoids = centers, nstart = nstart, ...)
@@ -506,6 +508,7 @@ run_nhc <- function(data = NULL, dist = NULL, n_cluster = 2, method = 1, centers
 #' @param dist A `dist` object.
 #' @param method Integer for the clustering method.
 #' @param max_cluster Integer for the maximum number of clusters.
+#' @param ... Additional arguments for `hclust`, `kmeans` or `pam`.
 #' @return A `clustering` object for different numbers of clusters.
 #' @export
 #' @examples
@@ -562,8 +565,7 @@ extract_cluster <- function(x, n_cluster = 2) {
 #'
 #' Extract cluster assignments for each number of clusters.
 #'
-#' @inheritParams run_clustering
-#' @param x A `clustering` object.
+#' @inheritParams calculate_between_inertia
 #' @return A `clustering` object with a new `clusters` attribute. This attribute
 #' contains a list of cluster assignments for each number of clusters.
 #' @examples
@@ -675,20 +677,25 @@ plotCohenetic <- function(x, dist, is_png = FALSE, verbose = FALSE) {
 #' Calculate the relative between-group inertia for each number of clusters.
 #'
 #' @inheritParams run_clustering
+#' @param x A matrix or data frame of integers.
 #' @param cl A `clustering` object.
-#' @return A numeric vector of relative between-group inertia values for each number of clusters, expressed as a percentage.
+#' @return A numeric vector of relative between-group inertia values for each
+#' number of clusters, expressed as a percentage.
 #' @export
 #' @examples
 #' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters
-#' getRelativeBetweenPerPart(iris[, -5], clusters)
-getRelativeBetweenPerPart <- function(x, cl, max_cluster = 6) {
+#' calculate_between_inertia(iris[, -5], clusters)
+calculate_between_inertia <- function(x, cl, max_cluster = 6) {
   x <- as.matrix(x)
-  between <- rep(0, max_cluster - 1)
-  TSS <- sum(scale(x, scale = FALSE)^2)
-  for (i in 2:max_cluster) {
-    cl_k <- as.factor(cl[[i - 1]])
-    between[i - 1] <- sum(t((t(getClusterCentroids(x, cl_k)) - apply(x, 2, mean))^2) * as.vector(table(cl_k))) / TSS
-  }
+  centers <- colMeans(x)
+  tss <- sum(scale(x, scale = FALSE)^2)
+  between <- map_dbl(
+    2:max_cluster, ~ {
+      cl_k <- cl[[.x - 1]]
+      bss <- (calculate_centroids_v0(x, cl_k) - centers) ^2
+      sum(rowSums(bss) * table(cl_k)) / tss
+    }
+  )
   return(100 * between)
 }
 
@@ -696,73 +703,106 @@ getRelativeBetweenPerPart <- function(x, cl, max_cluster = 6) {
 #'
 #' Calculate the centroids (mean points) of each cluster for each variable.
 #'
-#' @inheritParams getRelativeBetweenPerPart
-#' @return A matrix of cluster centroids, where each row corresponds to a cluster and each column to a variable.
+#' @inheritParams calculate_between_inertia
+#' @return A matrix of cluster centroids, where each row corresponds to a
+#' cluster and each column to a variable.
 #' @examples
 #' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters[[1]]
-#' getClusterCentroids(iris[, -5], clusters)
+#' calculate_centroids_v0(iris[, -5], clusters)
 #' @noRd
-getClusterCentroids <- function(x, cl) {
-  sapply(1:ncol(x), function(i) tapply(x[, i], cl, mean))
+calculate_centroids_v0 <- function(x, cl, func = colMeans) {
+  rowsum(x, cl) / tabulate(cl, nbins = max(cl))
+}
+
+#' Cluster centroids
+#'
+#' Calculate the centroids (mean points) of each cluster for each variable.
+#'
+#' @inheritParams calculate_between_inertia
+#' @return A matrix of cluster centroids, where each row corresponds to a
+#' cluster and each column to a variable.
+#' @examples
+#' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters[[1]]
+#' calculate_centroids(iris[, -5], clusters)
+#' @export
+calculate_centroids <- function(x, cl, func = colMeans) {
+    calculate_centroids_v0(x, cl, func) %>%
+    as_tibble() %>%
+    mutate(Cluster = seq(nrow(.))) %>%
+    relocate(Cluster)
 }
 
 #' Differences in between-group inertia
 #'
-#' Calculate the difference in between-group inertia between successive numbers of clusters.
+#' Calculate the difference in between-group inertia between successive numbers
+#' of clusters.
 #'
 #' @param x A numeric vector for between-group inertia values.
 #' @return A numeric vector for pairwise differences in between-group inertia.
 #' @export
 #' @examples
 #' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters
-#' inertia <- getRelativeBetweenPerPart(iris[, -5], clusters)
-#' getBetweenDifferences(inertia)
-getBetweenDifferences <- function(x) {
-  diff <- unlist(sapply(1:length(x), function(i) x[i] - x[i - 1]))
-  return(as.vector(cbind(x[1], t(diff))))
+#' inertia <- calculate_between_inertia(iris[, -5], clusters)
+#' calculate_between_diff(inertia)
+calculate_between_diff <- function(x) {
+  c(x[1], diff(x, lag = 1))
 }
 
 #' Within-group inertia (for a cluster)
 #'
 #' Calculate the within-group inertia for a specific cluster.
 #'
-#' @inheritParams getRelativeBetweenPerPart
+#' @inheritParams calculate_between_inertia
 #' @param i_cluster Integer for the index of the cluster.
 #' @return A numeric value for the within-group inertia.
 #' @examples
 #' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters[[1]]
-#' getWithin(iris[, -5], clusters)
-#' getWithin(iris[, -5], clusters, i_cluster = 2)
+#' calculate_within_inertia_v0(iris[, -5], clusters)
+#' calculate_within_inertia_v0(iris[, -5], clusters, i_cluster = 2)
 #' @noRd
-getWithin <- function(x, cl, i_cluster = 2) {
-  cluster_size <- length(cl[cl == i_cluster])
-  scaled <- scalecenter(x)
-  return(cluster_size * sum(getClusterCentroids(scaled, cl = cl)[i_cluster, ]^2) / nrow(x))
+calculate_within_inertia_v0 <- function(x, cl, i_cluster = 1) {
+  cluster_indices <- which(cl == i_cluster)
+  cluster_size <- length(cluster_indices)
+  centroids <- colMeans(x[cluster_indices, , drop = FALSE])
+  sum(centroids^2) * cluster_size / nrow(x)
 }
 
 #' Within-cluster inertia
 #'
-#' Calculate the relative within-cluster inertia for each cluster across different number of clusters.
+#' Calculate the relative within-cluster inertia for each cluster across
+#' different number of clusters.
 #'
-#' @inheritParams getRelativeBetweenPerPart
-#' @return A matrix of relative within-cluster inertia values, expressed as a percentage. Each row represents a clustering from a given number of clusters, and each column represents a cluster from this clustering.
+#' @inheritParams calculate_between_inertia
+#' @return A matrix of relative within-cluster inertia values, expressed as a
+#' percentage. Each row represents a clustering from a given number of
+#' clusters, and each column represents a cluster from this clustering.
 #' @export
 #' @examples
 #' clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters
-#' getRelativeWithinPerCluster(iris[, -5], clusters)
-getRelativeWithinPerCluster <- function(x, cl) {
+#' calculate_within_inertia(iris[, -5], clusters)
+calculate_within_inertia <- function(x, cl) {
+  x <- as.matrix(x) %>%
+    scalecenter()
   max_cluster <- length(cl)
-  within <- matrix(NA, max_cluster, max_cluster + 1)
-  rownames(within) <- seq(2, max_cluster + 1)
-  colnames(within) <- paste("G", seq(1, max_cluster + 1), sep = "")
-  for (k in 2:(max_cluster + 1)) {
-    cl_k <- cl[[k - 1]]
-    for (i in 1:length(table(cl_k))) {
-      within[k - 1, i] <- getWithin(x, cl = cl_k, i_cluster = i)
+
+  map_dfr(
+    2:(max_cluster + 1), function(k) {
+      cl_k <- cl[[k - 1]]
+
+      # Calculate within inertia per cluster and normalize
+      groups <- unique(cl_k)
+      within <- map_dbl(groups, ~ calculate_within_inertia_v0(x, cl = cl_k, i_cluster = .x))
+      within <- within / sum(within, na.rm = TRUE) * 100
+
+      # Return as data frame for easy binding
+      tibble(
+        `Nb. clusters` = k,
+        cluster = seq_along(within),
+        inertia = within
+      )
     }
-    within[k - 1, ] <- within[k - 1, ] / sum(as.numeric(na.omit(within[k - 1, ])))
-  }
-  return(100 * within)
+  ) %>%
+    pivot_wider(names_from = cluster, values_from = inertia, names_prefix = "C")
 }
 
 # Between inertia differences between a partionning and the previous
@@ -1376,7 +1416,7 @@ plotPca <- function(x, data, cl, axis1 = 1, axis2 = 2, colour = palette_perso(),
         csub = 1.5,
         as.factor(cl),
         grid = FALSE,
-        col = colPers(colour)(k),
+        col = colour,
         clabel = clabel,
         cstar = cstar,
         cellipse = cellipse,

@@ -30,7 +30,7 @@ run_clustering(
 \item{nstart}{if \code{centers} is a number, how many random sets
     should be chosen?}
 
-\item{...}{not used.}
+\item{...}{Additional arguments for \code{hclust}, \code{kmeans} or \code{pam}.}
 }
 \value{
 A \code{clustering} object for different numbers of clusters.

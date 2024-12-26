@@ -125,11 +125,11 @@ app_server <- function(input, output, session) {
         if (vars$verbose2) {
             cat("done.\n")
         }
-        vars$clusters <- getClusterPerPart(vars$classif, max_cluster = vars$max_clusters)
+        vars$clusters <- extract_clusters(vars$classif, max_cluster = vars$max_clusters)$clusters
 
         # inertia
-        vars$between <- getRelativeBetweenPerPart(vars$data, vars$clusters, max_cluster = vars$max_clusters)
-        vars$diff_between <- getBetweenDifferences(vars$between)
+        vars$between <- calculate_between_inertia(vars$data, vars$clusters, max_cluster = vars$max_clusters)
+        vars$diff_between <- calculate_between_diff(vars$between)
 
         printProgress(vars$verbose2, "PCA")
         vars$pca <- dudi.pca(
@@ -265,7 +265,7 @@ app_server <- function(input, output, session) {
               }
             )
             vars$plotElb <- expr(plotElbow(vars$between))
-            vars$within_k <- expr(getRelativeWithinPerCluster(vars$data, cl = vars$clusters))
+            vars$within_k <- expr(calculate_within_inertia(vars$data, cl = vars$clusters))
         }
 
         ##### print table func #####

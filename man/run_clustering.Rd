@@ -17,7 +17,7 @@ run_clustering(
 \arguments{
 \item{dist}{A \code{dist} object.}
 
-\item{data}{A matrix or data frame of integers.}
+\item{data}{A matrix or data frame of integers with rows as samples and columns as variables.}
 
 \item{method}{Integer for the clustering method.}
 

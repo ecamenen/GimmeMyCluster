@@ -12,13 +12,16 @@ calculate_within_inertia(x, cl)
 \item{cl}{A \code{clustering} object.}
 }
 \value{
-A matrix of relative within-cluster inertia values, expressed as a
+A matrix of within-cluster inertia values, expressed as a
 percentage. Each row represents a clustering from a given number of
 clusters, and each column represents a cluster from this clustering.
 }
 \description{
 Calculate the relative within-cluster inertia for each cluster across
 different number of clusters.
+}
+\details{
+Inertie intra-groupe de chaque groupe divisé par la somme de l'inertie intra-groupe (et pondéré par la taille des groupes et le nombre total d'échantillons).
 }
 \examples{
 clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters

@@ -112,7 +112,7 @@ calculate_between_diff(between) %>%
 ```
 
 ## Visualizing the Clusters
-Principal Component Analysis (PCA) reduces the dataset to two dimensions for easy visualization of cluster separation. For example, sample S42, which was flagged as misclassified by the Silhouette index, appears closer to the other irises group in the PCA plot.
+Principal Component Analysis (PCA) reduces the dataset to two dimensions for easy visualization of cluster separation. For example, sample 42, which was flagged as misclassified by the Silhouette index, appears closer to the other irises group in the PCA plot.
 ```{r}
 dudi.pca(df_scaled, scannf = FALSE, scale = FALSE, nf = 2) %>%
   plotPca(df_scaled, cl, advanced = TRUE)
@@ -122,7 +122,6 @@ A heatmap provides an overview of variable values for each sample, highlighting 
 ```{r}
 heatMap(df_scaled, dist = dist, c = clustering, cl = cl)
 ```
-
 
 A dendrogram visualizes hierarchical clustering by illustrating the fusion of samples at each step. Pruning the tree at the longest branches is a common way to determined the optimal number of cluster. Here, two clusters offer the best separation.
 ```{r}
@@ -143,13 +142,11 @@ getPdisPerPartition(df_scaled, cls) %>%
   pretty_table()
 ```
 
-
 This information can be visualized in a histogram, here for our optimal clustering (with two clusters).
 ```{r}
 getDiscriminantVariables(df_scaled, cl) %>%
   plotDiscriminantVariables()
 ```
-
 
 Variable contributions can also be analyzed within each group of flowers. For instance, petal length (contributing 82.4% overall) accounts for 52% within the first cluster.
 ```{r}
@@ -157,7 +154,6 @@ getCtrVar(df_scaled, cl) %>%
   multiply_by(100) %>% 
   pretty_table0(optimal_k)
 ```
-
 
 The mean values of each variable are used to describe each of the two groups. We can thus conclude that the irises of group number 1 seem to be characterized by smaller petals on average (0.25cm) than those of group number 2 (1.7cm).
 ```{r}

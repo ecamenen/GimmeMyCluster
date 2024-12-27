@@ -2,7 +2,7 @@
 % Please edit documentation in R/fingerprint_clustering.R
 \name{calculate_between_inertia}
 \alias{calculate_between_inertia}
-\title{Between-group inertia}
+\title{Clustering quality}
 \usage{
 calculate_between_inertia(x, cl, max_cluster = 6)
 }
@@ -18,7 +18,7 @@ A numeric vector of relative between-group inertia values for each
 number of clusters, expressed as a percentage.
 }
 \description{
-Calculate the relative between-group inertia for each number of clusters.
+Calculate the between-group inertia divided by the total inertia for each number of clusters.
 }
 \examples{
 clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters

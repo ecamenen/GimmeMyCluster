@@ -14,6 +14,7 @@ extract_clusters(x, max_cluster = 6)
 \value{
 A \code{clustering} object with a new \code{clusters} attribute. This attribute
 contains a list of cluster assignments for each number of clusters.
+Each value indicates the cluster number corresponding to a row in the raw data.
 }
 \description{
 Extract cluster assignments for each number of clusters.

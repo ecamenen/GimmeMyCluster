@@ -34,7 +34,7 @@ test_that("gapBest", {
 # ---- TEST CLUSTER SUMMARY OUTPUT ----
 test_that("printSummary", {
   # Calculate clustering metrics
-  between <- calculate_between_inertia(df, cl = cls, max_cluster = 10)  # Between-cluster variance
+  between <- calculate_inertia(df, cl = cls, max_cluster = 10)  # Between-cluster variance
   diff <- calculate_between_diff(between)  # Incremental variance differences
   silhouette <- getSilhouettePerPart(dist, cls) %>%
     getMeanSilhouettePerPart()  # Average silhouette width

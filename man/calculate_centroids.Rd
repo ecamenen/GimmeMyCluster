@@ -4,10 +4,11 @@
 \alias{calculate_centroids}
 \title{Cluster centroids}
 \usage{
-calculate_centroids(x, cl, func = colMeans)
+calculate_centroids(x, cl)
 }
 \arguments{
-\item{x}{A matrix or data frame of integers.}
+\item{x}{A matrix or data frame of integers with rows as samples and
+columns as variables.}
 
 \item{cl}{A \code{clustering} object.}
 }

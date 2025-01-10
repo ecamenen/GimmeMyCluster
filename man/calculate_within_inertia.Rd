@@ -7,7 +7,8 @@
 calculate_within_inertia(x, cl)
 }
 \arguments{
-\item{x}{A matrix or data frame of integers.}
+\item{x}{A matrix or data frame of integers with rows as samples and
+columns as variables.}
 
 \item{cl}{A \code{clustering} object.}
 }
@@ -21,7 +22,8 @@ Calculate the relative within-cluster inertia for each cluster across
 different number of clusters.
 }
 \details{
-Inertie intra-groupe de chaque groupe divisé par la somme de l'inertie intra-groupe (et pondéré par la taille des groupes et le nombre total d'échantillons).
+The within-group inertia of each group divided by the sum of the
+within-group inertia
 }
 \examples{
 clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters

@@ -7,7 +7,8 @@
 extract_clusters(x, max_cluster = 6)
 }
 \arguments{
-\item{x}{A matrix or data frame of integers.}
+\item{x}{A matrix or data frame of integers with rows as samples and
+columns as variables.}
 
 \item{max_cluster}{Integer for the maximum number of clusters.}
 }

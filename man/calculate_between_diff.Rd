@@ -18,6 +18,6 @@ of clusters.
 }
 \examples{
 clusters <- extract_clusters(run_clustering(dist(iris[, -5])))$clusters
-inertia <- calculate_between_inertia(iris[, -5], clusters)
+inertia <- calculate_inertia(iris[, -5], clusters)
 calculate_between_diff(inertia)
 }

@@ -713,7 +713,7 @@ calculate_between_inertia_v0 <- function(x, cl, centers) {
 
 calculate_bss <- function(x, cl, centers) {
   cluster_centers <- calculate_centroids_v0(x, cl)
-  map_dfr(unique(cl), ~ cluster_centers[.x, ] - centers)^2
+  map_dfr(rownames(cluster_centers), ~ cluster_centers[.x, ] - centers)^2
 }
 
 #' Cluster centroids

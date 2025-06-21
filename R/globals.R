@@ -1,11 +1,14 @@
 utils::globalVariables(
     c(
+        ".",
         "ADVANCED",
         "AXIS1",
         "AXIS2",
         "between",
         "classif",
         "CLASSIF_TYPE",
+        "Cluster",
+        "cluster",
         "clusters",
         "ctr_clus",
         "ctr_clus_plot",

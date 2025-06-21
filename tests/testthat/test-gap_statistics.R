@@ -62,3 +62,13 @@ test_that("printSummary", {
   expect_equal(round(as.vector(res[, 4]), 7), round(silhouette, 7))
 })
 
+# ---- TEST ORDERED CLUSTER SIZES ----
+# test_that("orderedClusterSize", {
+#   res <- getOrderedClusterSize(cls[[3]])  # Get cluster sizes for partition 3
+#
+#   # First element should be the smallest cluster size
+#   expect_equal(res[1], min(res))
+#
+#   # Third element should be the largest cluster size
+#   expect_equal(res[3], max(res))
+# })

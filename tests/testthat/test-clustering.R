@@ -26,7 +26,7 @@ test_that("clustering", {
   expect_s3_class(run_nhc(dist = dist_euc), "pam")
 
   # Test k-means clustering
-  clustering <- run_clustering(data = df, method = 2)
+  clustering <- run_clustering(data = df0, method = 2)
   expect_identical(clustering$method, "kmeans")
 
   # Ensure clustering results for 2 to 6 clusters are all k-means objects

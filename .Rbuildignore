@@ -18,3 +18,4 @@ $run_dev.*
 ^Meta$
 ^\.github$
 ^codecov\.yml$
+^.*\.BiocCheck$

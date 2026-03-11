@@ -13,3 +13,4 @@ inst/extdata/
 inst/doc
 /doc/
 /Meta/
+*.BiocCheck*

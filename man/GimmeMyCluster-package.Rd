@@ -4,7 +4,7 @@
 \name{GimmeMyCluster-package}
 \alias{GimmeMyCluster}
 \alias{GimmeMyCluster-package}
-\title{GimmeMyCluster: Automatic Clustering}
+\title{GimmeMyCluster: Clustering Utilities}
 \description{
 Performs unsupervised clustering and automatically determine the best number of cluster.
 }
